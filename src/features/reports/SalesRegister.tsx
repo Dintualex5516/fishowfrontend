@@ -21,6 +21,9 @@ interface SalesData {
 const SalesRegister: React.FC<SalesRegisterProps> = ({ date }) => {
   const [data, setData] = useState<SalesData[]>([]);
   const [loading, setLoading] = useState(false);
+  const [paidInputs, setPaidInputs] = useState<Record<string, number | undefined>>({});
+  const [discountInputs, setDiscountInputs] = useState<Record<string, number | undefined>>({});
+  const [saveMessage, setSaveMessage] = useState<string>('');
   const [currentDate, setCurrentDate] = useState<string>(() => {
     const today = new Date();
     return today.toISOString().split('T')[0];
@@ -32,6 +35,24 @@ const SalesRegister: React.FC<SalesRegisterProps> = ({ date }) => {
   useEffect(() => {
     if (selectedDate) {
       fetchSalesData();
+    }
+  }, [selectedDate]);
+
+  // Load saved data on component mount or date change
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`dailyCollection:${selectedDate}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        setPaidInputs(parsed.paid || {});
+        setDiscountInputs(parsed.discount || {});
+      } catch (error) {
+        console.error('Error loading saved data:', error);
+      }
+    } else {
+      // Clear inputs if no saved data for selected date
+      setPaidInputs({});
+      setDiscountInputs({});
     }
   }, [selectedDate]);
 
@@ -47,34 +68,103 @@ const SalesRegister: React.FC<SalesRegisterProps> = ({ date }) => {
   const fetchSalesData = async () => {
     setLoading(true);
     try {
-      const { data: salesData, error } = await supabase
+      // Fetch sales summary data from 'sales' table
+      const salesQuery = supabase
         .from('sales')
         .select('*')
         .eq('date', selectedDate);
 
-      if (error) throw error;
+      // Fetch parties, salesmen, customers for name mapping
+      const partiesQuery = supabase.from('parties').select('id, name');
+      const salesmenQuery = supabase.from('salesmen').select('id, name');
+      const customersQuery = supabase.from('customers').select('id, name');
 
-      // Process salesData to map to SalesData[]
-      const processedData: SalesData[] = (salesData || []).map((sale: any) => ({
-        party: sale.party,
-        totalBox: sale.total_box,
-        salesman: sale.salesman,
-        customer: sale.customer,
-        boxesSold: sale.boxes_sold,
-        price: sale.price,
-        total: sale.total,
-        items: sale.items || [],
-        cashPaid: sale.cash_paid,
-        discount: sale.discount,
+      const [salesRes, partiesRes, salesmenRes, customersRes] = await Promise.all([
+        salesQuery,
+        partiesQuery,
+        salesmenQuery,
+        customersQuery
+      ]);
+
+      if (salesRes.error) throw salesRes.error;
+      if (partiesRes.error) throw partiesRes.error;
+      if (salesmenRes.error) throw salesmenRes.error;
+      if (customersRes.error) throw customersRes.error;
+
+      const partyMap: Record<string, string> = Object.fromEntries((partiesRes.data || []).map((p: any) => [p.id, p.name]));
+      const salesmanMap: Record<string, string> = Object.fromEntries((salesmenRes.data || []).map((s: any) => [s.id, s.name]));
+      const customerMap: Record<string, string> = Object.fromEntries((customersRes.data || []).map((c: any) => [c.id, c.name]));
+
+      const salesSummaryData = salesRes.data;
+
+      // Fetch saved daily collection sheet data from sessionStorage
+      const savedCollectionDataRaw = sessionStorage.getItem(`dailyCollection:${selectedDate}`);
+      let savedCollectionData: { paid: Record<string, number>, discount: Record<string, number> } = { paid: {}, discount: {} };
+      if (savedCollectionDataRaw) {
+        try {
+          savedCollectionData = JSON.parse(savedCollectionDataRaw);
+        } catch (e) {
+          console.error('Error parsing saved daily collection data:', e);
+        }
+      }
+
+      // Map sales summary data by customer for quick lookup
+      const salesByCustomer: Record<string, any> = {};
+      (salesSummaryData || []).forEach((sale: any) => {
+        const customerId = sale.customer;
+        if (!salesByCustomer[customerId]) {
+          salesByCustomer[customerId] = {
+            party: sale.party,
+            totalBox: sale.total_box ?? 0,
+            salesman: sale.salesman,
+            customer: sale.customer,
+            boxesSold: sale.boxes_sold ?? 0,
+            price: sale.price ?? 0,
+            total: sale.total ?? 0,
+          };
+        } else {
+          // Aggregate if multiple sales for same customer
+          salesByCustomer[customerId].totalBox += sale.total_box ?? 0;
+          salesByCustomer[customerId].boxesSold += sale.boxes_sold ?? 0;
+          salesByCustomer[customerId].price += sale.price ?? 0;
+          salesByCustomer[customerId].total += sale.total ?? 0;
+        }
+      });
+
+      // Combine sales summary and daily collection sheet data
+      const combinedData: SalesData[] = Object.entries(salesByCustomer).map(([customerId, summary]) => ({
+        party: partyMap[summary.party] || summary.party,
+        totalBox: summary.totalBox,
+        salesman: salesmanMap[summary.salesman] || summary.salesman,
+        customer: customerMap[summary.customer] || summary.customer,
+        boxesSold: summary.boxesSold,
+        price: summary.price,
+        total: summary.total,
+        items: [], // No items info here
+        cashPaid: paidInputs[customerId] ?? savedCollectionData.paid[customerId] ?? 0,
+        discount: discountInputs[customerId] ?? savedCollectionData.discount[customerId] ?? 0,
       }));
 
-      setData(processedData);
+      setData(combinedData);
     } catch (error) {
       console.error('Error fetching sales data:', error);
       setData([]);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSave = () => {
+    // Save to sessionStorage (persists during browser session)
+    const paidToSave = Object.fromEntries(Object.entries(paidInputs).filter(([_, v]) => v !== undefined));
+    const discountToSave = Object.fromEntries(Object.entries(discountInputs).filter(([_, v]) => v !== undefined));
+    sessionStorage.setItem(`dailyCollection:${selectedDate}`, JSON.stringify({
+      paid: paidToSave,
+      discount: discountToSave,
+      timestamp: new Date().toISOString()
+    }));
+    setSaveMessage('Data saved successfully!');
+    setTimeout(() => setSaveMessage(''), 3000);
   };
 
   const handlePrint = () => {
