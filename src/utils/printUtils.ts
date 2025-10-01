@@ -1,0 +1,1 @@
+window.printReport = undefined;
