@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { supabase } from '../../database/supabase';
+import React, { useEffect, useState } from "react";
+import { getDailySummary, SummaryRow } from "../../lib/ledgerApi";
 
 interface DailySummaryProps {
   date: string;
@@ -17,78 +17,46 @@ const DailySummary: React.FC<DailySummaryProps> = ({ date }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (date) {
-      fetchSummaryData();
-    }
+    if (date) fetchSummaryData();
   }, [date]);
 
   const fetchSummaryData = async () => {
     setLoading(true);
     try {
-      // Fetch sales in date range and lookup tables for names
-      const [
-        { data: sales, error: salesError },
-        { data: parties, error: partiesError },
-        { data: salesmen, error: salesmenError }
-      ] = await Promise.all([
-        supabase
-          .from('sales')
-          .select('date, party, total_box, salesman, total_amount')
-          .eq('date', date)
-          .order('date', { ascending: true }),
-        supabase.from('parties').select('id, name'),
-        supabase.from('salesmen').select('id, name'),
-      ]);
-
-      if (salesError) throw salesError;
-      if (partiesError) throw partiesError;
-      if (salesmenError) throw salesmenError;
-
-      const partyMap = Object.fromEntries((parties || []).map((p: any) => [p.id, p.name]));
-      const salesmanMap = Object.fromEntries((salesmen || []).map((s: any) => [s.id, s.name]));
-
-      const mapped: SummaryData[] = (sales || []).map((sale: any) => ({
-        party: partyMap[sale.party] || sale.party,
-        totalBox: Number(sale.total_box) || 0,
-        salesman: salesmanMap[sale.salesman] || sale.salesman,
-        grandTotal: Number(sale.total_amount) || 0,
+      const res = await getDailySummary(date);
+      // Map to the shape your table expects
+      const mapped: SummaryData[] = (res.rows || []).map((r: SummaryRow) => ({
+        party: r.party,
+        totalBox: r.totalBox,
+        salesman: r.salesman,
+        grandTotal: r.grandTotal,
       }));
-
       setData(mapped);
     } catch (error) {
-      console.error('Error fetching summary data:', error);
+      console.error("Error fetching summary data:", error);
       setData([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const totalBoxes = data.reduce((sum, item) => sum + item.totalBox, 0);
-  const totalGrandTotal = data.reduce((sum, item) => sum + item.grandTotal, 0);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-12">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-      </div>
-    );
-  }
-
   const handlePrint = () => {
-    const printContents = document.getElementById('printable-area')?.innerHTML;
+    const printContents = document.getElementById("printable-area")?.innerHTML;
     if (printContents) {
-      const printWindow = window.open('', '', 'height=600,width=800');
+      const printWindow = window.open("", "", "height=600,width=800");
       if (printWindow) {
-        const currentDate = new Date().toISOString().split('T')[0];
+        const currentDate = new Date().toISOString().split("T")[0];
         printWindow.document.title = `Daily Summary - ${currentDate}`;
         printWindow.document.write('<html><head><title>Fishow - Daily Summary</title>');
-        printWindow.document.write('<style>body{font-family: Arial, sans-serif; margin: 20px; overflow: visible !important; max-width: 100% !important;} h1, h2 {text-align: center;} table {width: 100%; border-collapse: collapse; overflow: visible !important; max-width: 100% !important;} th, td {border: 1px solid #000; padding: 8px; text-align: left;} th {background-color: #f2f2f2;} .footer {margin-top: 20px; text-align: center; font-size: 12px;}</style>');
-        printWindow.document.write('</head><body>');
-        printWindow.document.write('<h1>Fishow</h1>');
-        printWindow.document.write('<h2>Daily Summary</h2>');
+        printWindow.document.write(
+          '<style>body{font-family: Arial, sans-serif; margin: 20px; overflow: visible !important; max-width: 100% !important;} h1, h2 {text-align: center;} table {width: 100%; border-collapse: collapse; overflow: visible !important; max-width: 100% !important;} th, td {border: 1px solid #000; padding: 8px; text-align: left;} th {background-color: #f2f2f2;} .footer {margin-top: 20px; text-align: center; font-size: 12px;}</style>'
+        );
+        printWindow.document.write("</head><body>");
+        printWindow.document.write("<h1>Fishow</h1>");
+        printWindow.document.write("<h2>Daily Summary</h2>");
         printWindow.document.write(printContents);
         printWindow.document.write('<div class="footer">Thank you for your business!</div>');
-        printWindow.document.write('</body></html>');
+        printWindow.document.write("</body></html>");
         printWindow.document.close();
         printWindow.focus();
         printWindow.print();
@@ -97,12 +65,18 @@ const DailySummary: React.FC<DailySummaryProps> = ({ date }) => {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Daily Summary
-        </h2>
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Daily Summary</h2>
         <button
           onClick={handlePrint}
           className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
@@ -147,7 +121,7 @@ const DailySummary: React.FC<DailySummaryProps> = ({ date }) => {
               </tr>
             ))}
           </tbody>
-          {/* Footer totals removed as per request */}
+          {/* Footer totals intentionally omitted */}
         </table>
       </div>
     </div>

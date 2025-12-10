@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import AdminBoard from '../../components/AdminBoard';
 import SearchableInput from '../../components/SearchableInput';
 import { Plus, Trash2, Save } from 'lucide-react';
-import { supabase } from '../../database/supabase';
+import { incrementBoxSaleBatch } from '../../lib/box';
+import { listEntities } from '../../lib/entities';
 
 interface BoxSentItem {
   id: string;
@@ -27,6 +28,8 @@ const FishBoxSentForm: React.FC = () => {
   ]);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [focusNewItem, setFocusNewItem] = useState<string | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadingLookups, setLoadingLookups] = useState(false);
 
   // Sales data for preview
   const [salesData, setSalesData] = useState<{
@@ -57,29 +60,42 @@ const FishBoxSentForm: React.FC = () => {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: custData } = await supabase
-        .from('customers')
-        .select('id, name')
-        .order('name');
-      const { data: partyData } = await supabase
-        .from('parties')
-        .select('id, name')
-        .order('name');
-      const { data: salesData } = await supabase
-        .from('salesmen')
-        .select('id, name')
-        .order('name');
 
-      if (custData) setCustomers(custData);
-      if (partyData) setParties(partyData);
-      if (salesData) setSalesmenList(salesData);
+ useEffect(() => {
+    let mounted = true;
+    const fetchLookups = async () => {
+      setLoadingLookups(true);
+      try {
+        // fetch a reasonable page size for select/autocomplete
+        const pageSize = 200;
+        const [custResp, partyResp, salesResp] = await Promise.all([
+          listEntities("customers", { page: 1, pageSize }),
+          listEntities("parties", { page: 1, pageSize }),
+          listEntities("salesmen", { page: 1, pageSize }),
+        ]);
+
+        if (!mounted) return;
+
+        if (custResp && Array.isArray(custResp.data)) {
+          setCustomers(custResp.data.map(e => ({ id: String(e.id), name: e.name })));
+        }
+        if (partyResp && Array.isArray(partyResp.data)) {
+          setParties(partyResp.data.map(e => ({ id: String(e.id), name: e.name })));
+        }
+        if (salesResp && Array.isArray(salesResp.data)) {
+          setSalesmenList(salesResp.data.map(e => ({ id: String(e.id), name: e.name })));
+        }
+      } catch (err) {
+        console.error("Error loading lookup data via listEntities:", err);
+        setNotification({ message: "Failed loading lookup data", type: "error" });
+      } finally {
+        if (mounted) setLoadingLookups(false);
+      }
     };
 
-    fetchData();
+    fetchLookups();
+    return () => { mounted = false; };
   }, []);
-
   // Load sales data from localStorage
   const loadSalesData = useCallback(() => {
     try {
@@ -202,32 +218,70 @@ const FishBoxSentForm: React.FC = () => {
     return entity ? entity.name : id;
   };
 
-  const handleSave = () => {
-    const boxSentEntry = {
-      id: Date.now().toString(),
-      date,
-      party,
-      salesman,
-      items,
-      totalBoxes: calculateTotalBoxes(),
-      createdAt: new Date().toISOString(),
-    };
 
-    // Save to localStorage
-    const existingEntries = JSON.parse(
-      localStorage.getItem('boxSentEntries') || '[]'
-    );
-    existingEntries.push(boxSentEntry);
-    localStorage.setItem('boxSentEntries', JSON.stringify(existingEntries));
+  const handleSave = async () => {
+  // Validate header
+  if (!party || String(party).trim() === "") {
+    setNotification({ message: "Please select a party before saving.", type: "error" });
+    return;
+  }
 
-    setNotification({ message: 'Fish box sent entry saved successfully!', type: 'success' });
+  // Build rows to save: only rows with a customer and boxes > 0
+  // const rowsToSave = items
+  //   .map(it => ({
+  //     customerName: String(it.customer || "").trim(),
+  //     boxes: parseInt(it.boxCount || "0", 10)
+  //   }))
+  //   .filter(r => r.customerName !== "" && Number.isFinite(r.boxes) && r.boxes > 0);
 
-    // Reset form
-    setDate(new Date().toISOString().split('T')[0]);
-    setParty('');
-    setSalesman('');
-    setItems([{ id: '1', customer: '', boxCount: '' }]);
-  };
+  const rowsToSave = items
+  .map(it => ({ customerId: String(it.customer || "").trim(), boxes: parseInt(it.boxCount || "0", 10) }))
+  .filter(r => r.customerId !== "" && Number.isFinite(r.boxes) && r.boxes > 0);
+
+  if (rowsToSave.length === 0) {
+    setNotification({ message: "Please add at least one customer with positive box count.", type: "error" });
+    return;
+  }
+
+  const partyId = String(party);
+
+  setIsSaving(true);
+  try {
+    // Call batch API (one request)
+   const resp = await incrementBoxSaleBatch(partyId, rowsToSave,date);
+    // Expected resp: { ok: true, updated: [...], missing: [...] }
+    const updated = resp?.updated ?? [];
+    const missing = resp?.missing ?? [];
+
+    if (updated.length > 0) {
+      setNotification({ message: `${updated.length} rows updated successfully.`, type: "success" });
+    }
+
+    if (missing.length > 0) {
+      // Backend did not find rows to update for these customers
+      // We leave them in the form so user can create them or re-check.
+      setNotification({ message: `${missing.length} rows were missing and not updated: ${missing.join(", ")}`, type: "error" });
+      // Optionally you could do automatic creation (use upsert route / Option A)
+    } else {
+      // All rows updated — reset form and refresh preview data
+      setDate(new Date().toISOString().split('T')[0]);
+      setParty('');
+      setSalesman('');
+      setItems([{ id: Date.now().toString(), customer: '', boxCount: '' }]);
+
+      // reload preview (your function reads from localStorage)
+      loadSalesData();
+    }
+  } catch (err: any) {
+    console.error("Batch save failed", err);
+    const msg = err?.response?.data?.message || err?.message || "Failed to save box entries";
+    setNotification({ message: msg, type: "error" });
+  } finally {
+    setIsSaving(false);
+  }
+};
+
+  // };
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -490,13 +544,22 @@ const FishBoxSentForm: React.FC = () => {
               <span>Add Customer</span>
             </button>
 
-            <button
+            {/* <button
               onClick={handleSave}
               className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-all"
             >
               <Save className="w-4 h-4" />
               <span>Save Entry</span>
-            </button>
+            </button> */}
+            <button
+  onClick={handleSave}
+  disabled={isSaving}
+  className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+>
+  <Save className="w-4 h-4" />
+  <span>{isSaving ? 'Saving...' : 'Save Entry'}</span>
+</button>
+
           </div>
         </div>
 

@@ -10,10 +10,12 @@ import AdminBoard from '../../components/AdminBoard';
 import DailyCollectionSheet from './DailyCollectionSheet';
 import SalesRegister from './SalesRegister';
 import DailySummary from './DailySummary';
-import StatementReport from './StatementReport';
+import { getDailySummary } from '../../lib/ledgerApi';
+// import StatementReport from './StatementReport';
 import BoxReceiveReport from './BoxReceiveReport';
 import DailySummaryBox from './DailySummaryBox';
 import TotalBoxBalance from './TotalBoxBalance';
+
 
 const Reports: React.FC = () => {
   const navigate = useNavigate();
@@ -40,7 +42,7 @@ const Reports: React.FC = () => {
     'daily-collection': DailyCollectionSheet,
     'sales-register': SalesRegister,
     'daily-summary': DailySummary,
-    'statement': StatementReport,
+    // 'statement': StatementReport,
     'box-receive': BoxReceiveReport,
     'daily-summary-box': DailySummaryBox,
     'total-box-balance': TotalBoxBalance,
@@ -50,7 +52,7 @@ const Reports: React.FC = () => {
     'daily-collection': 'Daily Collection Sheet',
     'sales-register': 'Sales Register',
     'daily-summary': 'Daily Summary',
-    'statement': 'Statement Report',
+    // 'statement': 'Statement Report',
     'box-receive': 'Box Receive Report',
     'daily-summary-box': 'Daily Summary (Box)',
     'total-box-balance': 'Total Box Balance',
@@ -87,25 +89,42 @@ const Reports: React.FC = () => {
   }, [currentReportType, dateRange.startDate, dateRange.endDate]);
 
   // Fetch total sale for Daily Summary when date changes
+  // useEffect(() => {
+  //   const fetchDailySummaryTotal = async () => {
+  //     if (currentReportType !== 'daily-summary' || !singleDate) {
+  //       setDailySummaryTotal(0);
+  //       return;
+  //     }
+  //     const { data, error } = await supabase
+  //       .from('sales')
+  //       .select('total_amount')
+  //       .eq('date', singleDate);
+  //     if (error) {
+  //       setDailySummaryTotal(0);
+  //       return;
+  //     }
+  //     const total = (data || []).reduce((sum: number, row: any) => sum + (Number(row.total_amount) || 0), 0);
+  //     setDailySummaryTotal(total);
+  //   };
+  //   fetchDailySummaryTotal();
+  // }, [currentReportType, singleDate]);
+
   useEffect(() => {
-    const fetchDailySummaryTotal = async () => {
-      if (currentReportType !== 'daily-summary' || !singleDate) {
-        setDailySummaryTotal(0);
-        return;
-      }
-      const { data, error } = await supabase
-        .from('sales')
-        .select('total_amount')
-        .eq('date', singleDate);
-      if (error) {
-        setDailySummaryTotal(0);
-        return;
-      }
-      const total = (data || []).reduce((sum: number, row: any) => sum + (Number(row.total_amount) || 0), 0);
-      setDailySummaryTotal(total);
-    };
-    fetchDailySummaryTotal();
-  }, [currentReportType, singleDate]);
+  const fetchDailySummaryTotal = async () => {
+    if (currentReportType !== 'daily-summary' || !singleDate) {
+      setDailySummaryTotal(0);
+      return;
+    }
+    try {
+      const res = await getDailySummary(singleDate);
+      setDailySummaryTotal(Number(res.totals.grandTotal) || 0);
+    } catch (e) {
+      console.error(e);
+      setDailySummaryTotal(0);
+    }
+  };
+  fetchDailySummaryTotal();
+}, [currentReportType, singleDate]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">

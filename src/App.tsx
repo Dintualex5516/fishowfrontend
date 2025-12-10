@@ -19,6 +19,10 @@ import PartyPage from './features/parties/PartyPage';
 import Reports from './features/reports/Reports';
 import SalesmanPage from './features/salesmen/SalesmanPage';
 import SignUp from './features/auth/SignUp';
+import CashTransactions from './features/transactions/CashTransactions';
+import BoxTransactions from './features/transactions/BoxTransactions';
+import BoxStatement from './features/reports/BoxStatement';
+import CashStatement from './features/reports/CashStatement';
 
 
 function App() {
@@ -42,8 +46,11 @@ function App() {
           <Route path="/create-party" element={<PartyPage />} />
           <Route path="/create-salesman" element={<SalesmanPage />} />
           <Route path="/create-item" element={<ItemPage />} />
+          <Route path="/cash-transactions" element={<CashTransactions />} />
+          <Route path="/box-transactions" element={<BoxTransactions />} />
           <Route path="/reports/:reportType" element={<Reports />} />
-
+          <Route path="/reports/box-statement" element={<BoxStatement />} />
+          <Route path="/reports/cash-statement" element={<CashStatement />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>

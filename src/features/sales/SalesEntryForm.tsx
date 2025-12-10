@@ -3,7 +3,15 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminBoard from '../../components/AdminBoard';
 import SearchableInput from '../../components/SearchableInput';
-import { supabase } from '../../database/supabase';
+import { listEntities } from '../../lib/entities';
+// adjust path if your file is elsewhere
+import {
+  createSale,
+  updateSale,
+  getLatestEntry,
+  getSaleByEntry,
+} from "../../lib/sales";
+
 
 interface SalesItem {
   id: string;
@@ -188,6 +196,23 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
   );
 };
 
+// Try to resolve a value to an entity id (value might already be an id string or a name)
+function resolveEntityId(value: string | null | undefined, list: { id: string; name: string }[]) : string | null {
+  if (!value) return null;
+  const asId = String(value).trim();
+
+  // If it exactly matches an id in list, return it
+  if (list.some(x => x.id === asId)) return asId;
+
+  // Otherwise try to match by name (case-insensitive)
+  const byName = list.find(x => x.name && x.name.toLowerCase() === asId.toLowerCase());
+  if (byName) return byName.id;
+
+  // Not found
+  return null;
+}
+
+
 const SalesEntryForm: React.FC = () => {
   const navigate = useNavigate();
   const [customers, setCustomers] = useState<{ id: string; name: string }[]>(
@@ -224,6 +249,40 @@ const SalesEntryForm: React.FC = () => {
     const day = String(today.getDate()).padStart(2, '0');
     return `${year}-${month}-${day}`;
   };
+
+//   const mapItemsForServer = (items: SalesItem[]) => {
+//   return items
+//     .filter(it => it && (it.customer?.trim() || it.box || it.kg || it.price || it.item?.trim() || it.remark?.trim()))
+//     .map(it => ({
+//       customerName: it.customer || null,
+//       productName: it.item || null,
+//       box: it.box !== "" ? it.box : null,
+//       kg: it.kg !== "" ? it.kg : null,
+//       price: it.price !== "" ? it.price : null,
+//       total: it.total !== "" ? it.total : null,
+//       remark: it.remark || null,
+//     }));
+// };
+const mapItemsForServer = (items: SalesItem[]) => {
+  return items
+    .filter(it => it && (it.customer?.trim() || it.box || it.kg || it.price || it.item?.trim() || it.remark?.trim()))
+    .map(it => {
+      const customerId = resolveEntityId(it.customer, customers);
+      const productId  = resolveEntityId(it.item, products);
+
+      return {
+        // The backend expects these fields to be IDs (your backend code used customerName/productName as IDs)
+        customerName: customerId,      // string id or null
+        productName:  productId,       // string id or null
+        box: it.box !== "" ? it.box : null,
+        kg: it.kg !== "" ? it.kg : null,
+        price: it.price !== "" ? it.price : null,
+        total: it.total !== "" ? it.total : null,
+        remark: it.remark || null,
+      };
+    });
+};
+
 
   const [date, setDate] = useState(getCurrentDate());
   const [party, setParty] = useState('');
@@ -287,34 +346,43 @@ const SalesEntryForm: React.FC = () => {
     }
   }, [navigate]);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const { data: custData } = await supabase
-        .from('customers')
-        .select('id, name')
-        .order('name');
-      const { data: partyData } = await supabase
-        .from('parties')
-        .select('id, name')
-        .order('name');
-      const { data: salesData } = await supabase
-        .from('salesmen')
-        .select('id, name')
-        .order('name');
-      const { data: productData } = await supabase
-        .from('products')
-        .select('id, name')
-        .order('name');
 
-      if (custData) setCustomers(custData);
-      if (partyData) setParties(partyData);
-      if (salesData) setSalesmenList(salesData);
-      if (productData) setProducts(productData);
-    };
+useEffect(() => {
+  const fetchData = async () => {
+    try {
+      // Fetch a reasonably large first page for selects/autocomplete fallback
+      const pageSize = 200;
 
-    fetchData();
-  }, []);
+      const [custResp, partyResp, salesResp, prodResp] = await Promise.all([
+        listEntities('customers', { page: 1, pageSize }),
+        listEntities('parties',   { page: 1, pageSize }),
+        listEntities('salesmen',  { page: 1, pageSize }),
+        listEntities('products',  { page: 1, pageSize }),
+      ]);
 
+      // listEntities returns { data, totalCount, page, pageSize }
+     if (custResp && Array.isArray(custResp.data)) {
+  setCustomers(custResp.data.map(e => ({ ...e, id: String(e.id) })));
+}
+if (partyResp && Array.isArray(partyResp.data)) {
+  setParties(partyResp.data.map(e => ({ ...e, id: String(e.id) })));
+}
+if (salesResp && Array.isArray(salesResp.data)) {
+  setSalesmenList(salesResp.data.map(e => ({ ...e, id: String(e.id) })));
+}
+if (prodResp && Array.isArray(prodResp.data)) {
+  setProducts(prodResp.data.map(e => ({ ...e, id: String(e.id) })));
+}
+
+    } catch (err) {
+      console.error('Error loading entity lists', err);
+      // Optional: show notification
+      setNotification({ message: 'Failed loading lookup data', type: 'error' });
+    }
+  };
+
+  fetchData();
+}, []);
   // Load header values on component mount
   useEffect(() => {
     loadHeaderValues();
@@ -465,189 +533,197 @@ const SalesEntryForm: React.FC = () => {
   // Get the calculated total boxes value
   const totalBoxesValue = calculateTotalBoxes();
 
-  // Fetch existing entries for the current header combination and load last entry
-  const fetchAndLoadLastEntry = useCallback(async () => {
-    // Only proceed if all required fields are filled and not empty
-    if (!date || !party || !salesman || !manualTotalBox ||
-        party.trim() === '' || salesman.trim() === '' || manualTotalBox.trim() === '') {
-      setEntryNumber('');
-      // Clear items when required fields are not properly filled
-      const newItem: SalesItem = {
-        id: crypto.randomUUID(),
-        customer: '',
-        box: '',
-        kg: '',
-        price: '',
-        total: '',
-        item: '',
-        remark: '',
-      };
-      setItems([newItem]);
-      return;
-    }
 
-    try {
-      console.log('🔍 Searching for existing entries with:', {
-        date,
-        party,
-        salesman,
-        totalBox: parseInt(manualTotalBox) || 0
-      });
+// Replace your current fetchAndLoadLastEntry useCallback with this:
+const fetchAndLoadLastEntry = useCallback(async () => {
+  // require header fields
+  if (!date || !party || !salesman || !manualTotalBox ||
+      party.trim() === "" || salesman.trim() === "" || manualTotalBox.trim() === "") {
+    setEntryNumber("");
+    const newItem: SalesItem = {
+      id: crypto.randomUUID(),
+      customer: "",
+      box: "",
+      kg: "",
+      price: "",
+      total: "",
+      item: "",
+      remark: "",
+    };
+    setItems([newItem]);
+    return;
+  }
 
-      const { data: existingEntries, error } = await supabase
-        .from('sales')
-        .select('entry_number, items, id')
-        .eq('date', date)
-        .eq('party', party)
-        .eq('salesman', salesman)
-        .eq('total_box', parseInt(manualTotalBox) || 0)
-        .order('entry_number', { ascending: false }); // Get highest entry number first
+  try {
+    const resp = await getLatestEntry({
+      date,
+      partyName: party,
+      salesmanName: salesman,
+      totalBox: manualTotalBox,
+    });
 
-      if (error) {
-        console.error('❌ Error fetching existing entries:', error);
-        return;
-      }
+    console.log(resp);
+    
 
-      console.log('📊 Found entries:', existingEntries?.length || 0);
-      if (existingEntries && existingEntries.length > 0) {
-        console.log('📋 Entry details:', existingEntries.map(e => ({
-          id: e.id,
-          entryNumber: e.entry_number,
-          hasItems: !!e.items?.length
+    if (resp && resp.sale) {
+      const lastEntry = resp.sale;
+      setEntryNumber(String(lastEntry.entry_number || 1));
+      setCurrentEntryId(lastEntry.id || null);
+
+      if (Array.isArray(resp.items) && resp.items.length > 0) {
+        setItems(resp.items.map((it: any, idx: number) => ({
+          id: it.id ? String(it.id) : `${idx + 1}`,
+          customer: it.customer_name || "",
+          box: it.box != null ? String(it.box) : "",
+          kg: it.kg != null ? String(it.kg) : "",
+          price: it.price != null ? String(it.price) : "",
+          total: it.total != null ? String(it.total) : "",
+          item: it.product_name || "",
+          remark: it.remark || "",
         })));
-      }
+        setNotification({ message: `Loaded entry ${lastEntry.entry_number}`, type: "success" });
 
-      if (existingEntries && existingEntries.length > 0) {
-        // Get the highest (last) entry number
-        const lastEntry = existingEntries[0];
-        const lastEntryNumber = lastEntry.entry_number;
-
-        // Set the entry number to the last saved entry
-        setEntryNumber(lastEntryNumber.toString());
-        setCurrentEntryId(lastEntry.id);
-
-        // Load the data from the last entry
-        if (lastEntry.items && lastEntry.items.length > 0) {
-          setItems(lastEntry.items.map((item: any, index: number) => ({
-            ...item,
-            id: item.id || `${index + 1}`,
-          })));
-          setNotification({ message: `Loaded entry ${lastEntryNumber}`, type: 'success' });
-
-          // Automatically add a new empty row after loading existing data
-          setTimeout(() => {
-            const newItem: SalesItem = {
-              id: crypto.randomUUID(),
-              customer: defaultCustomer,
-              box: '',
-              kg: '',
-              price: defaultPrice,
-              total: '',
-              item: defaultItem,
-              remark: '',
-            };
-            setItems(prevItems => [newItem, ...prevItems]);
-          }, 100);
-        }
-      } else {
-        // No existing entries for this exact combination, start with 1
-        setEntryNumber('1');
-        setCurrentEntryId(null);
-        // Clear items for new entry
-        const newItem: SalesItem = {
-          id: crypto.randomUUID(),
-          customer: '',
-          box: '',
-          kg: '',
-          price: '',
-          total: '',
-          item: '',
-          remark: '',
-        };
-        setItems([newItem]);
-      }
-    } catch (err) {
-      console.error('Error in fetchAndLoadLastEntry:', err);
-    }
-  }, [date, party, salesman, manualTotalBox]);
-
-  // Load specific entry data when entryNumber changes
-  const loadEntryData = useCallback(async (entryNum: string) => {
-    // Only load if all required fields are filled and entry number is provided
-    if (!date || !party || !salesman || !manualTotalBox || !entryNum) {
-      // Clear items if required fields are missing
-      const newItem: SalesItem = {
-        id: crypto.randomUUID(),
-        customer: '',
-        box: '',
-        kg: '',
-        price: '',
-        total: '',
-        item: '',
-        remark: '',
-      };
-      setItems([newItem]);
-      return;
-    }
-
-    try {
-    const { data: entry, error } = await supabase
-        .from('sales')
-      .select('items, id')
-        .eq('date', date)
-        .eq('party', party)
-        .eq('salesman', salesman)
-        .eq('total_box', parseInt(manualTotalBox) || 0)
-        .eq('entry_number', parseInt(entryNum))
-        .single();
-
-      if (error && error.code !== 'PGRST116') {  // Ignore "no rows" error
-        console.error('Error loading entry data:', error);
-        return;
-      }
-
-      if (entry && entry.items && entry.items.length > 0) {
-        setCurrentEntryId((entry as any).id || null);
-        setItems(entry.items.map((item: any, index: number) => ({
-          ...item,
-          id: item.id || `${index + 1}`,
-        })));
-        setNotification({ message: `Loaded entry ${entryNum}`, type: 'success' });
-
-        // Automatically add a new empty row after loading existing data
+        // Add one empty row at top (use defaults but DO NOT include them as deps)
         setTimeout(() => {
           const newItem: SalesItem = {
             id: crypto.randomUUID(),
             customer: defaultCustomer,
-            box: '',
-            kg: '',
+            box: "",
+            kg: "",
             price: defaultPrice,
-            total: '',
+            total: "",
             item: defaultItem,
-            remark: '',
+            remark: "",
           };
-          setItems(prevItems => [newItem, ...prevItems]);
+          setItems(prev => [newItem, ...prev]);
         }, 100);
       } else {
-        // Clear items if no entry found for the specific entry number
-        setCurrentEntryId(null);
+        setItems([{
+          id: crypto.randomUUID(),
+          customer: "",
+          box: "",
+          kg: "",
+          price: "",
+          total: "",
+          item: "",
+          remark: "",
+        }]);
+      }
+    } else {
+      setEntryNumber("1");
+      setCurrentEntryId(null);
+      setItems([{
+        id: crypto.randomUUID(),
+        customer: "",
+        box: "",
+        kg: "",
+        price: "",
+        total: "",
+        item: "",
+        remark: "",
+      }]);
+    }
+  } catch (err: any) {
+    console.error("fetchAndLoadLastEntry error", err);
+    setEntryNumber("1");
+    setCurrentEntryId(null);
+    setItems([{
+      id: crypto.randomUUID(),
+      customer: "",
+      box: "",
+      kg: "",
+      price: "",
+      total: "",
+      item: "",
+      remark: "",
+    }]);
+  }
+}, [date, party, salesman, manualTotalBox]); // <- IMPORTANT: no defaultCustomer/defaultPrice/defaultItem here
+
+
+// Replace current loadEntryData useCallback with this:
+const loadEntryData = useCallback(async (entryNum: string) => {
+  if (!date || !party || !salesman || !manualTotalBox || !entryNum) {
+    setItems([{
+      id: crypto.randomUUID(),
+      customer: "",
+      box: "",
+      kg: "",
+      price: "",
+      total: "",
+      item: "",
+      remark: "",
+    }]);
+    return;
+  }
+
+  try {
+    const resp = await getSaleByEntry({
+      date,
+      partyName: party,
+      salesmanName: salesman,
+      totalBox: manualTotalBox,
+      entryNumber: entryNum,
+    });
+
+    if (resp && resp.sale) {
+      setCurrentEntryId(resp.sale.id || null);
+      setItems(resp.items.map((it: any, idx: number) => ({
+        id: it.id ? String(it.id) : `${idx + 1}`,
+        customer: it.customer_name || "",
+        box: it.box != null ? String(it.box) : "",
+        kg: it.kg != null ? String(it.kg) : "",
+        price: it.price != null ? String(it.price) : "",
+        total: it.total != null ? String(it.total) : "",
+        item: it.product_name || "",
+        remark: it.remark || "",
+      })));
+      setNotification({ message: `Loaded entry ${entryNum}`, type: "success" });
+
+      setTimeout(() => {
         const newItem: SalesItem = {
           id: crypto.randomUUID(),
-          customer: '',
-          box: '',
-          kg: '',
-          price: '',
-          total: '',
-          item: '',
-          remark: '',
+          customer: defaultCustomer,
+          box: "",
+          kg: "",
+          price: defaultPrice,
+          total: "",
+          item: defaultItem,
+          remark: "",
         };
-        setItems([newItem]);
-        console.log('No existing entry found for entry number, cleared items');
-      }
-    } catch (err) {
-      console.error('Error in loadEntryData:', err);
+        setItems(prev => [newItem, ...prev]);
+      }, 100);
+    } else {
+      setCurrentEntryId(null);
+      setItems([{
+        id: crypto.randomUUID(),
+        customer: "",
+        box: "",
+        kg: "",
+        price: "",
+        total: "",
+        item: "",
+        remark: "",
+      }]);
+      console.log("No existing entry found for entry number, cleared items");
     }
-  }, [date, party, salesman, manualTotalBox]);
+  } catch (err: any) {
+    console.error("loadEntryData error", err);
+    setCurrentEntryId(null);
+    setItems([{
+      id: crypto.randomUUID(),
+      customer: "",
+      box: "",
+      kg: "",
+      price: "",
+      total: "",
+      item: "",
+      remark: "",
+    }]);
+  }
+}, [date, party, salesman, manualTotalBox]); // <- IMPORTANT: no defaults here either
+
+
 
   // Effect to fetch and load last entry when header fields change
   useEffect(() => {
@@ -946,215 +1022,116 @@ const SalesEntryForm: React.FC = () => {
   }, []);
 
   const handleSave = async () => {
-    console.log('💾 Save button clicked with data:', {
-      date,
-      party,
-      salesman,
-      manualTotalBox,
-      entryNumber,
-      itemsCount: items.length
+  console.log("💾 Save button clicked with data:", {
+    date,
+    party,
+    salesman,
+    manualTotalBox,
+    entryNumber,
+    itemsCount: items.length,
+  });
+
+  setHasAttemptedSave(true);
+
+  // Validation (same as before)
+  const fieldErrors: { [key: string]: boolean } = {};
+  if (!party?.trim()) fieldErrors["party"] = true;
+  if (!salesman?.trim()) fieldErrors["salesman"] = true;
+  if (!manualTotalBox?.trim()) fieldErrors["totalBox"] = true;
+  if (!items || items.length === 0) fieldErrors["items"] = true;
+  else {
+    items.forEach((item, index) => {
+      if (!item.customer?.trim()) fieldErrors[`item-${index}-customer`] = true;
+      const hasBox = item.box && item.box.trim() !== "";
+      const hasKg = item.kg && item.kg.trim() !== "";
+      if (!hasBox && !hasKg) fieldErrors[`item-${index}-boxorkg`] = true;
+      if (!item.price || item.price.trim() === "") fieldErrors[`item-${index}-price`] = true;
     });
+  }
 
-    // Mark that user has attempted to save
-    setHasAttemptedSave(true);
+  setValidationErrors(fieldErrors);
 
-    // Validation before save
-    const fieldErrors: {[key: string]: boolean} = {};
+  if (Object.keys(fieldErrors).length > 0) {
+    setNotification({ message: "Please enter all mandatory fields", type: "error" });
+    return;
+  }
 
-    // Check header fields
-    if (!party?.trim()) {
-      fieldErrors['party'] = true;
-    }
-    if (!salesman?.trim()) {
-      fieldErrors['salesman'] = true;
-    }
-    if (!manualTotalBox?.trim()) {
-      fieldErrors['totalBox'] = true;
-    }
-
-    // Check items
-    if (!items || items.length === 0) {
-      fieldErrors['items'] = true;
-    } else {
-      items.forEach((item, index) => {
-        if (!item.customer?.trim()) {
-          fieldErrors[`item-${index}-customer`] = true;
-        }
-
-        // Check if either box or kg is provided
-        const hasBox = item.box && item.box.trim() !== '';
-        const hasKg = item.kg && item.kg.trim() !== '';
-        if (!hasBox && !hasKg) {
-          fieldErrors[`item-${index}-boxorkg`] = true;
-        }
-
-        if (!item.price || item.price.trim() === '') {
-          fieldErrors[`item-${index}-price`] = true;
-        }
-      });
-    }
-
-    // Set validation errors for styling
-    setValidationErrors(fieldErrors);
-
-    // If there are validation errors, show simple message and prevent save
-    if (Object.keys(fieldErrors).length > 0) {
-      setNotification({ message: 'Please enter all mandatory fields', type: 'error' });
-      return;
-    }
-
-    try {
-      console.log('Starting save operation...');
-      // Decide whether to update an existing entry or create a new one based on recalled header
-      if (currentEntryId) {
-        console.log('Updating recalled existing entry:', currentEntryId);
-        const { error } = await supabase
-          .from('sales')
-          .update({
-            date,
-            party,
-            total_box: parseInt(manualTotalBox) || 0,
-            entry_number: parseInt(entryNumber) || 1,
-            salesman,
-            items,
-            total_amount: calculateTotal(),
-          })
-          .eq('id', currentEntryId);
-
-        if (error) {
-          console.error('Update error:', error);
-          throw error;
-        }
-        console.log('Successfully updated entry:', currentEntryId);
-      } else {
-        console.log('No existing entry for this header. Creating a new one with default entry number.');
-        const finalEntryNumber = parseInt(entryNumber) || 1;
-        const salesEntry = {
-          date,
-          party,
-          total_box: parseInt(manualTotalBox) || 0,
-          entry_number: finalEntryNumber,
-          salesman,
-          items,
-          total_amount: calculateTotal(),
-          created_at: new Date().toISOString(),
-        };
-
-        const { data, error } = await supabase
-          .from('sales')
-          .insert([salesEntry])
-          .select('id')
-          .single();
-
-        if (error) {
-          console.error('Insert error:', error);
-          throw error;
-        }
-        console.log('Successfully created new entry:', data?.id);
-        setEntryNumber(finalEntryNumber.toString());
-        setCurrentEntryId(data?.id || null);
-      }
-
-      console.log('Save operation completed successfully, setting success notification');
-      setNotification({ message: `Sales entry ${entryNumber} saved successfully!`, type: 'success' });
-      console.log('Success notification set');
-
-      // Clear validation errors after successful save
-      setValidationErrors({});
-      setHasAttemptedSave(false);
-
-      // Reset form data after successful save
-      // Reset date to current date
-      setDate(getCurrentDate());
-
-      // Clear all header fields
-      setParty('');
-      setSalesman('');
-      setManualTotalBox('');
-
-      // Clear all defaults
-      setDefaultCustomer('');
-      setDefaultPrice('');
-      setDefaultItem('');
-
-      // Create completely new empty row
-      const newItem: SalesItem = {
-        id: crypto.randomUUID(),
-        customer: '',
-        box: '',
-        kg: '',
-        price: '',
-        total: '',
-        item: '',
-        remark: '',
-      };
-      setItems([newItem]);
-
-      // Don't auto-load after save - keep form clean
-      // User must manually enter combination to load data
-
-      // Clear autosave state and localStorage immediately after save
-      setCurrentDraftId(null);
-      setCurrentEntryId(null);
-      setAutosaveStatus('idle');
-      setLastAutosave(null);
-      localStorage.removeItem('salesFormDraft');
-      localStorage.removeItem('salesFormHeaderValues');
-    } catch (err) {
-      console.error('Save operation failed:', err);
-
-      // Handle different types of errors
-      let errorMessage = 'Unknown error';
-
-      if (err instanceof Error) {
-        errorMessage = err.message;
-      } else if (typeof err === 'object' && err !== null) {
-        // Handle Supabase errors
-        const errorObj = err as any;
-
-        if (errorObj.message) {
-          errorMessage = errorObj.message;
-        } else if (errorObj.error && typeof errorObj.error === 'string') {
-          errorMessage = errorObj.error;
-        } else if (errorObj.details) {
-          errorMessage = errorObj.details;
-        } else if (errorObj.code) {
-          // Handle specific Supabase error codes
-          switch (errorObj.code) {
-            case 'PGRST116':
-              errorMessage = 'No data found';
-              break;
-            case '23505':
-              errorMessage = 'Duplicate entry - this data already exists';
-              break;
-            case '23503':
-              errorMessage = 'Invalid reference - related data not found';
-              break;
-            case '42501':
-              errorMessage = 'Permission denied - check database access';
-              break;
-            case '08006':
-            case '08003':
-              errorMessage = 'Database connection failed';
-              break;
-            default:
-              errorMessage = `Database error (${errorObj.code})`;
-          }
-        } else {
-          // Try to extract any meaningful information
-          const errorStr = JSON.stringify(err);
-          if (errorStr !== '{}' && errorStr.length < 200) {
-            errorMessage = errorStr;
-          }
-        }
-      } else if (typeof err === 'string') {
-        errorMessage = err;
-      }
-
-      console.error('Parsed error message:', errorMessage);
-      setNotification({ message: `Error saving sales entry: ${errorMessage}`, type: 'error' });
-    }
+  // Prepare payload
+  const payload = {
+    date,
+    partyName: party,
+    salesmanName: salesman,
+    totalBox: manualTotalBox != null ? Number(manualTotalBox) : 0,
+    entryNumber: entryNumber ? Number(entryNumber) : 1,
+    totalAmount: calculateTotal(),
+    items: mapItemsForServer(items),
   };
+
+  try {
+    console.log("Starting save operation with payload:", payload);
+
+    if (currentEntryId) {
+      // update existing
+      await updateSale(currentEntryId, payload);
+      setNotification({ message: `Sales entry ${entryNumber} updated successfully!`, type: "success" });
+    } else {
+      // create new
+      const resp = await createSale(payload);
+      // resp should contain id and possibly load number string
+      const newId = resp?.id;
+      setCurrentEntryId(newId || null);
+      // Ensure entryNumber is set (server uses provided entryNumber; your router returns load_number_str only)
+      setEntryNumber(String(payload.entryNumber || 1));
+      setNotification({ message: `Sales entry ${payload.entryNumber} saved successfully!`, type: "success" });
+    }
+
+    // Clear validation and reset form similar to your previous behaviour
+    setValidationErrors({});
+    setHasAttemptedSave(false);
+
+    // Reset date to today
+    setDate(getCurrentDate());
+    setParty("");
+    setSalesman("");
+    setManualTotalBox("");
+    setDefaultCustomer("");
+    setDefaultPrice("");
+    setDefaultItem("");
+
+    const newItem: SalesItem = {
+      id: crypto.randomUUID(),
+      customer: "",
+      box: "",
+      kg: "",
+      price: "",
+      total: "",
+      item: "",
+      remark: "",
+    };
+    setItems([newItem]);
+
+    // Clear autosave data
+    setCurrentDraftId(null);
+    setCurrentEntryId(null);
+    setAutosaveStatus("idle");
+    setLastAutosave(null);
+    localStorage.removeItem("salesFormDraft");
+    localStorage.removeItem("salesFormHeaderValues");
+  } catch (err: any) {
+    console.error("Save operation failed:", err);
+
+    // Handle common API errors
+    const status = err?.response?.status;
+    const data = err?.response?.data;
+    if (status === 409) {
+      setNotification({ message: data?.message || "Duplicate entry", type: "error" });
+    } else {
+      const msg = (data && data.message) ? data.message : (err.message || "Failed to save");
+      setNotification({ message: `Error saving sales entry: ${msg}`, type: "error" });
+    }
+  }
+};
+
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {

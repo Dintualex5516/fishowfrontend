@@ -3,7 +3,8 @@ import { useNavigate } from 'react-router-dom';
 import AdminBoard from '../../components/AdminBoard';
 import SearchableInput from '../../components/SearchableInput';
 import { Eye, FileText, Edit, Save, Trash2, Plus, X } from 'lucide-react';
-import { supabase } from '../../database/supabase';
+import { deleteBoxSaleRow, listBoxSaleRows, updateBoxSaleRow } from '../../lib/boxSale';
+import { listEntities } from '../../lib/entities';
 
 interface BoxSalesEntry {
   id: string;
@@ -18,6 +19,7 @@ interface BoxSalesEntry {
     price: string;
     total: string;
     customer: string;
+    box_type?: string | null;
   }>;
   totalAmount: string;
   createdAt: string;
@@ -25,6 +27,60 @@ interface BoxSalesEntry {
   load_number_string?: string;
   balance: number;
 }
+
+// API shape we receive from /api/box-sale-list
+type ApiBoxItem = {
+  id: string | number;
+  customer?: string | null;
+  box?: number | null;
+  product_name?: string | null;
+  box_type?: string | null;
+  price?: number | null;
+  total_amount?: number | null;
+  remark?: string | null;
+  kg?: number | null;
+  created_at?: string | null;
+};
+
+type ApiBoxEntry = {
+  id: string;
+  load_number?: number | null;
+  load_number_str?: string | null;
+  date?: string | null;
+  party?: string | null;
+  salesman?: string | null;
+  total_box?: number | null;
+  items?: ApiBoxItem[];
+  sold_boxes?: number;
+  balance?: number;
+  total_amount?: number | null;
+  created_at?: string | null;
+};
+
+// The UI shape you were using (example — adapt if your component's BoxSalesEntry differs)
+type UiItem = {
+  id: string;
+  item: string;
+  box: string;
+  price: string;
+  total: string;
+  customer: string;
+};
+
+type BoxSalesEntry1 = {
+  id: string;
+  date: string;
+  party: string;
+  totalBox: string;
+  salesman: string;
+  items: UiItem[];
+  totalAmount: string;
+  createdAt: string;
+  load_number?: number;
+  load_number_string?: string;
+  balance: number;
+};
+
 
 interface EditModalProps {
   isOpen: boolean;
@@ -186,6 +242,7 @@ const EditModal: React.FC<EditModalProps> = ({
       price: '',
       total: '',
       customer: '',
+      box_type: '',
     };
 
     setEditData(prev => {
@@ -321,7 +378,10 @@ const EditModal: React.FC<EditModalProps> = ({
                     Customer
                   </th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
-                    Box Type (Item)
+                    Box Type
+                  </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Items
                   </th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Box
@@ -370,6 +430,25 @@ const EditModal: React.FC<EditModalProps> = ({
                         }}
                       />
                     </td>
+                    {/* <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      <p className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white text-sm">
+                        {item.box_type ?? ''}
+                      </p>
+                    </td> */}
+
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      <input
+                        type="text"
+                        value={item.box_type ?? ''}
+                        onChange={(e) => handleItemChange(item.id, 'box_type', e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(e, item.id, 'box_type')}
+                        placeholder="Box type"
+                        data-field="box_type"
+                        data-item-id={item.id}
+                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      />
+                    </td>
+
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                       <SearchableInput
                         value={item.item}
@@ -471,7 +550,8 @@ const BoxSalesList: React.FC = () => {
   const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage] = useState(25);
-
+  const [kpis, setKpis] = useState<{ totalSale: number; boxesAdded: number; boxesSold: number; currentBalance: number } | null>(null);
+  const [loadingLookups, setLoadingLookups] = useState(false);
   // Generate load number string
   const generateLoadNumberString = (num: number) => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -515,6 +595,58 @@ const BoxSalesList: React.FC = () => {
     if (startDate && !endDate) setEndDate(startDate);
   }, [startDate, endDate]);
 
+  useEffect(() => { fetchSales(); }, [startDate, endDate]);
+
+
+  const fetchSales = async () => {
+    try {
+      const from = startDate;
+      const to = endDate;
+      // call backend route that groups by load and returns KPIs
+      const resp = await listBoxSaleRows({ from, to });
+
+      console.log(resp)
+
+      const entries: BoxSalesEntry1[] = (resp.items || []).map((e: ApiBoxEntry) => {
+        return {
+          id: String(e.id ?? ''), // unique key for the group/load
+          // date: (e.date ?? (e.created_at ? e.created_at.split('T')[0] : new Date().toISOString().split('T')[0])),
+          date: (() => {
+            const raw = e.date ?? e.created_at ?? new Date().toISOString();
+            // If the value contains a time part, keep only date portion (YYYY-MM-DD)
+            return String(raw).split('T')[0];
+          })(),
+          party: e.party ?? '',
+          totalBox: String(Number(e.total_box ?? 0)),
+          salesman: e.salesman ?? '',
+          items: (e.items ?? []).map((it: ApiBoxItem) => ({
+            id: String(it.id ?? ''),
+            item: it.product_name ?? '',        // map product_name -> item
+            box: String(Number(it.box ?? 0)),   // ensure string for UI
+            price: String(Number(it.price ?? 0)),
+            total: String(Number(it.total_amount ?? 0)),
+            customer: it.customer ?? '',
+            box_type: it.box_type ?? null
+          })),
+          totalAmount: String(Number(e.total_amount ?? 0)),
+          createdAt: e.created_at ?? '',
+          load_number: e.load_number ?? undefined,
+          load_number_string: e.load_number_str ?? undefined,
+          balance: Number(e.balance ?? 0),
+        };
+      });
+
+
+      setSalesEntries(entries);
+
+      // Set KPI state for UI KPI boxes
+      setKpis(resp.kpis);
+    } catch (err) {
+      console.error('Error fetching box sale list:', err);
+      setNotification({ message: 'Error loading box sale data', type: 'error' });
+    }
+  };
+
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAuthenticated');
     if (!isAuthenticated) {
@@ -522,92 +654,45 @@ const BoxSalesList: React.FC = () => {
       return;
     }
 
-    const fetchSales = async () => {
+    let mounted = true;
+    const fetchLookupsAndSales = async () => {
+      setLoadingLookups(true);
       try {
-        // Step 1: Fetch sales
-        const { data: salesData, error: salesError } = await supabase
-          .from('sales')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (salesError) throw salesError;
-
-        if (!salesData || salesData.length === 0) {
-          setSalesEntries([]);
-          return;
-        }
-
-        // Fetch lookup tables
-
-        // Step 3: Fetch lookup tables
-        const [parties, salesmen, customers, products] = await Promise.all([
-          supabase.from('parties').select('id, name'),
-          supabase.from('salesmen').select('id, name'),
-          supabase.from('customers').select('id, name'),
-          supabase.from('products').select('id, name'),
+        const pageSize = 200;
+        const [custResp, partyResp, salesResp, prodResp] = await Promise.all([
+          listEntities("customers", { page: 1, pageSize }),
+          listEntities("parties", { page: 1, pageSize }),
+          listEntities("salesmen", { page: 1, pageSize }),
+          listEntities("products", { page: 1, pageSize }),
         ]);
 
-        // Create lookup maps
-        const partyMap = Object.fromEntries(
-          (parties.data || []).map((p) => [p.id, p.name])
-        );
-        const salesmanMap = Object.fromEntries(
-          (salesmen.data || []).map((s) => [s.id, s.name])
-        );
-        const customerMap = Object.fromEntries(
-          (customers.data || []).map((c) => [c.id, c.name])
-        );
-        const productMap = Object.fromEntries(
-          (products.data || []).map((p) => [p.id, p.name])
-        );
+        if (!mounted) return;
 
-        // Step 4: Map sales with names and generate load numbers for entries that don't have them
-        const mappedData: BoxSalesEntry[] = salesData.map((sale, index) => {
-          let loadNumber = sale.load_number;
-          let loadNumberString = sale.load_number_string;
+        if (custResp && Array.isArray(custResp.data)) {
+          setCustomers(custResp.data.map((e: any) => ({ id: String(e.id), name: e.name })));
+        }
+        if (partyResp && Array.isArray(partyResp.data)) {
+          setParties(partyResp.data.map((e: any) => ({ id: String(e.id), name: e.name })));
+        }
+        if (salesResp && Array.isArray(salesResp.data)) {
+          setSalesmenList(salesResp.data.map((e: any) => ({ id: String(e.id), name: e.name })));
+        }
+        if (prodResp && Array.isArray(prodResp.data)) {
+          setProducts(prodResp.data.map((e: any) => ({ id: String(e.id), name: e.name })));
+        }
 
-          // Generate load number for entries that don't have one
-          if (!loadNumber || !loadNumberString) {
-            // Use the entry's position in the result set as a fallback
-            // This ensures consistency but isn't perfect for very old entries
-            loadNumber = sale.load_number || (salesData.length - index);
-            loadNumberString = sale.load_number_string || generateLoadNumberString(loadNumber);
-          }
-
-          // Calculate balance: total_box - sum of sold boxes
-          const soldBoxes = (sale.items || []).reduce((sum: number, item: any) => sum + (parseFloat(item.box) || 0), 0);
-          const balance = sale.total_box - soldBoxes;
-
-          return {
-            id: sale.id,
-            date: sale.date,
-            party: partyMap[sale.party] || sale.party,
-            totalBox: String(sale.total_box),
-            salesman: salesmanMap[sale.salesman] || sale.salesman,
-            items: (sale.items || []).map((item: { id: string; item: string; box: string; price: string; total: string; customer: string }) => ({
-              ...item,
-              item: productMap[item.item] || item.item,
-              customer: customerMap[item.customer] || item.customer,
-            })),
-            totalAmount: String(sale.total_amount),
-            createdAt: sale.created_at,
-            load_number: loadNumber,
-            load_number_string: loadNumberString,
-            balance,
-          };
-        });
-
-        setSalesEntries(mappedData);
-        
-        // Set the lookup data for the edit modal
-        setParties(parties.data || []);
-        setSalesmenList(salesmen.data || []);
-        setCustomers(customers.data || []);
-        setProducts(products.data || []);
+        // finally fetch grouped sales entries
+        await fetchSales();
       } catch (err) {
-        console.error('Error fetching sales:', err);
+        console.error("Error loading lookup data via listEntities:", err);
+        setNotification({ message: "Failed loading lookup data", type: "error" });
+      } finally {
+        if (mounted) setLoadingLookups(false);
       }
     };
+
+    fetchLookupsAndSales();
+    return () => { mounted = false; };
 
     fetchSales();
   }, [navigate]);
@@ -633,90 +718,60 @@ const BoxSalesList: React.FC = () => {
 
   const confirmDelete = async () => {
     if (!deletingEntry) return;
-
     try {
-      const { error } = await supabase
-        .from('sales')
-        .delete()
-        .eq('id', deletingEntry.id);
-
-      if (error) throw error;
-
-      // Update local state
-      setSalesEntries(prev => prev.filter(entry => entry.id !== deletingEntry.id));
-
+      await deleteBoxSaleRow(deletingEntry.id);
+      // remove locally for instant feedback
+      setSalesEntries(prev => prev.filter(e => e.id !== deletingEntry.id));
       setNotification({ message: 'Box sales entry deleted successfully!', type: 'success' });
       closeDelete();
-      closeEdit(); // Close the edit modal after successful deletion
-    } catch (err) {
-      console.error('Error deleting box sales entry:', err);
-      setNotification({ message: 'Error deleting box sales entry', type: 'error' });
+      closeEdit();
+    } catch (err: any) {
+      console.error('Error deleting box sale entry:', err);
+      const message = err?.response?.data?.message ?? 'Error deleting entry';
+      setNotification({ message, type: 'error' });
     }
   };
+
 
   const handleSaveEdit = async (updatedEntry: BoxSalesEntry) => {
     try {
-      // Create maps for quick lookup
-      const partyMap = Object.fromEntries(parties.map(p => [p.id, p.name]));
-      const salesmanMap = Object.fromEntries(salesmenList.map(s => [s.id, s.name]));
-      const productMap = Object.fromEntries(products.map(p => [p.id, p.name]));
-      const customerMap = Object.fromEntries(customers.map(c => [c.id, c.name]));
-
-      // Use the IDs directly since updatedEntry now has IDs
-      const partyId = updatedEntry.party;
-      const salesmanId = updatedEntry.salesman;
-    
-      // Items already have IDs
-      const updatedItems = updatedEntry.items.map(item => ({
-        ...item,
-        item: item.item, // Already ID
-        customer: item.customer, // Already ID
-      }));
-    
-      // Recalculate total_amount from items
-      const totalAmount = updatedItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
-    
-      // Update the entry in the database
-      const { error } = await supabase
-        .from('sales')
-        .update({
-          date: updatedEntry.date,
-          party: partyId,
-          total_box: parseInt(updatedEntry.totalBox),
-          salesman: salesmanId,
-          items: updatedItems,
-          total_amount: totalAmount,
-        })
-        .eq('id', updatedEntry.id);
-
-      if (error) throw error;
-
-      // Map back to names for local state
-      const updatedEntryWithNames = {
-        ...updatedEntry,
-        party: partyMap[updatedEntry.party] || updatedEntry.party,
-        salesman: salesmanMap[updatedEntry.salesman] || updatedEntry.salesman,
-        items: updatedEntry.items.map(item => ({
-          ...item,
-          item: productMap[item.item] || item.item,
-          customer: customerMap[item.customer] || item.customer,
+      // Build payload for patch: use fields in box_sale_list table
+      // Note: backend PATCH accepts partial update; here we send representative fields.
+      const payload: any = {
+        date: updatedEntry.date,
+        party_name: updatedEntry.party,
+        salesman_name: updatedEntry.salesman,
+        total_box: Number(updatedEntry.totalBox || 0),
+        total_amount: Number(updatedEntry.totalAmount || 0),
+        // You may store items JSON in the row; if so include items
+        items: updatedEntry.items.map(it => ({
+          id: it.id,
+          item: it.item, // product id or name depending on your model
+          box: Number(it.box || 0),
+          price: Number(it.price || 0),
+          total: Number(it.total || 0),
+          customer: it.customer,
+          box_type: it.box_type ?? null,
         })),
+        // optionally load_number/load_number_str if you want to change them
+        load_number: updatedEntry.load_number,
+        load_number_str: updatedEntry.load_number_string,
       };
 
-      // Update local state
-      setSalesEntries(prev =>
-        prev.map(entry =>
-          entry.id === updatedEntry.id ? updatedEntryWithNames : entry
-        )
-      );
+      // id here is loadKey which we used as the id in fetchSales mapping
+      const resp = await updateBoxSaleRow(updatedEntry.id, payload);
 
+      // success -> re-fetch canonical data
+      await fetchSales();
       setNotification({ message: 'Box sales entry updated successfully!', type: 'success' });
       closeEdit();
-    } catch (err) {
-      console.error('Error updating box sales entry:', err);
-      setNotification({ message: 'Error updating box sales entry', type: 'error' });
+    } catch (err: any) {
+      console.error('Error updating box sale entry:', err);
+      const message = err?.response?.data?.message ?? 'Error updating entry';
+      setNotification({ message, type: 'error' });
     }
   };
+
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -735,11 +790,10 @@ const BoxSalesList: React.FC = () => {
       {/* Notification Toast */}
       {notification && (
         <div className="fixed top-4 right-4 z-50">
-          <div className={`px-4 py-3 rounded-lg shadow-lg border ${
-            notification.type === 'success'
-              ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
-              : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
-          }`}>
+          <div className={`px-4 py-3 rounded-lg shadow-lg border ${notification.type === 'success'
+            ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
+            : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
+            }`}>
             <div className="flex items-center space-x-2">
               {notification.type === 'success' ? (
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -805,7 +859,7 @@ const BoxSalesList: React.FC = () => {
                   <span>{filteredEntries.length} entries found</span>
                 </div>
               </div>
-          
+
               {/* Pagination Info */}
               {totalPages > 1 && (
                 <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
@@ -836,7 +890,8 @@ const BoxSalesList: React.FC = () => {
             <div className="text-center">
               <div className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Total Sale</div>
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                ₹{filteredEntries.reduce((sum, entry) => sum + (parseFloat(entry.totalAmount) || 0), 0).toFixed(2)}
+                {/* ₹{filteredEntries.reduce((sum, entry) => sum + (parseFloat(entry.totalAmount) || 0), 0).toFixed(2)} */}
+                ₹{kpis?.totalSale.toFixed(2)}
               </div>
               <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 Total amount from {filteredEntries.length} entries
@@ -1059,7 +1114,8 @@ const BoxSalesList: React.FC = () => {
                             {item.box}
                           </td>
                           <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-white">
-                            {selectedEntry.party}
+                            {item.box_type}
+                            {/* {selectedEntry.party} */}
                           </td>
                           <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-white">
                             {selectedEntry.balance}

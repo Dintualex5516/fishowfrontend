@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminBoard from '../../components/AdminBoard';
 import { Save } from 'lucide-react';
-import { supabase } from '../../database/supabase';
+import { getBoxTracking, receiveBoxes } from '../../lib/boxTracking';
 
 interface BoxTrackingItem {
   id: string;
@@ -14,7 +14,8 @@ interface BoxTrackingItem {
   currentDbBalance: number; // Current balance from database
   rcdBox: number;
   balance: number;
-  isModified?: boolean; // Track if user changed this record
+  isModified?: boolean;
+  totalReceived:number; // Track if user changed this record
 }
 
 const MultipleBoxReceiveUpdate: React.FC = () => {
@@ -46,228 +47,113 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
   }, [notification]);
 
 
-  const fetchData = async () => {
-    setLoading(true);
-    try {
-      // Get today's date
-      const today = new Date().toISOString().split('T')[0];
+const fetchData = async () => {
+  setLoading(true);
+  try {
+    const today = new Date().toISOString().slice(0, 10);
 
-      // Fetch lookup tables with error handling
-      const customersRes = await supabase.from('customers').select('id, name');
-      const partiesRes = await supabase.from('parties').select('id, name');
+    const payload = await getBoxTracking(today);
+    const rows = Array.isArray(payload.items) ? payload.items : [];
 
-      if (customersRes.error) {
-        console.error('Error fetching customers:', customersRes.error);
-        throw customersRes.error;
-      }
-      if (partiesRes.error) {
-        console.error('Error fetching parties:', partiesRes.error);
-        throw partiesRes.error;
-      }
+    const mapped: BoxTrackingItem[] = rows.map((r: any, idx: number) => {
+      // robustly pick values from multiple possible server keys
+      const partyId = r.party_id ?? r.partyId ?? r.partyKey ?? null;
+      const customerId = r.customer_id ?? r.customerId ?? r.customerKey ?? null;
 
-      const customerMap = Object.fromEntries(
-        (customersRes.data || []).map((c: any) => [c.id, c.name])
-      );
-      const partyMap = Object.fromEntries(
-        (partiesRes.data || []).map((p: any) => [p.id, p.name])
-      );
+      const partyName = r.party_name ?? r.party ?? r.partyName ?? r.partyNameString ?? null;
+      const customerName = r.customer_name ?? r.customer ?? r.customerName ?? r.customerNameString ?? null;
 
-      // Fetch sales data with error handling
-      const { data: salesData, error: salesError } = await supabase
-        .from('sales')
-        .select('*')
-        .order('date', { ascending: true });
+      const openingBalance = Number(r.openingBalance ?? r.opening_balance ?? r.lastSent ?? r.last_sent ?? 0);
+      const todaySales = Number(r.todaySales ?? r.todays_sales ?? r.todaysSales ?? 0);
+      const total = Number(r.total ?? r.total_to_receive ?? r.boxToBeReceived ?? (openingBalance + todaySales));
+      const closing = Number(r.closingBalance ?? r.closing_balance ?? r.balance ?? r.closing ?? 0);
+      const totalReceived = Number(r.totalReceived ?? r.total_received ?? r.box_receive ?? r.boxReceive ?? 0);
 
-      if (salesError) {
-        console.error('Error fetching sales data:', salesError);
-        throw salesError;
-      }
+      // Build an id for the frontend row; prefer backend id if present
+      const clientRowId = String(r.id ?? `${partyId ?? partyName}|||${customerId ?? customerName}|||${idx}`);
 
-      // Fetch existing box_tracking data
-      const { data: existingTrackingData, error: trackingError } = await supabase
-        .from('box_tracking')
-        .select('*');
+      return {
+        id: clientRowId,
+        customer: customerName ?? String(customerId ?? ''),
+        party: partyName ?? String(partyId ?? ''),
+        openingBalance,
+        todaySales,
+        total,
+        currentDbBalance: closing, // server canonical closing balance
+        rcdBox: 0,
+        balance: closing, // visible balance (will update as user types)
+        isModified: false,
+        // keep raw ids for use when saving
+        // @ts-ignore
+        partyId,
+        // @ts-ignore
+        customerId,
+        // @ts-ignore
+        totalReceived,
+      } as BoxTrackingItem;
+    });
 
-      if (trackingError) {
-        console.error('Error fetching tracking data:', trackingError);
-      }
-
-      // Create map of existing balances (customer-party -> balance)
-      const existingBalances = new Map<string, number>();
-      existingTrackingData?.forEach((record: any) => {
-        const key = `${record.customer}-${record.party}`;
-        existingBalances.set(key, record.closing_balance || record.total || 0);
-      });
-
-      // Group sales by customer-party
-      const customerPartyMap = new Map<string, any>();
-      salesData?.forEach((sale: any) => {
-        const saleDate = sale.date;
-        const isToday = saleDate === today;
-
-        (sale.items || []).forEach((item: any) => {
-          const customerId = item.customer;
-          const partyId = sale.party;
-          const customerName = customerMap[customerId] || customerId;
-          const partyName = partyMap[partyId] || partyId;
-          const key = `${customerName}-${partyName}`;
-          const boxes = parseFloat(item.box) || 0;
-
-          if (!customerPartyMap.has(key)) {
-            customerPartyMap.set(key, {
-              customer: customerName,
-              party: partyName,
-              openingBalance: 0,
-              todaySales: 0,
-              total: 0,
-            });
-          }
-
-          const entry = customerPartyMap.get(key)!;
-          if (isToday) {
-            entry.todaySales += boxes;
-          } else {
-            entry.openingBalance += boxes;
-          }
-          entry.total = entry.openingBalance + entry.todaySales;
-        });
-      });
-
-      // Convert to display items
-      const mappedData: BoxTrackingItem[] = Array.from(customerPartyMap.values()).map((entry, index) => {
-        const key = `${entry.customer}-${entry.party}`;
-        const existingBalance = existingBalances.get(key) || entry.total;
-
-        return {
-          id: `${key}-${index}`,
-          customer: entry.customer,
-          party: entry.party,
-          openingBalance: entry.openingBalance,
-          todaySales: entry.todaySales,
-          total: entry.total,
-          currentDbBalance: existingBalance,
-          rcdBox: 0,
-          balance: existingBalance,
-          isModified: false,
-        };
-      });
-
-      setItems(mappedData);
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setNotification({ message: 'Error loading data. Please refresh the page.', type: 'error' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
+    setItems(mapped);
+  } catch (err: any) {
+    console.error('Error fetching box tracking', err);
+    setNotification({ message: 'Error loading data. Please refresh the page.', type: 'error' });
+  } finally {
+    setLoading(false);
+  }
+};
 
 
   const handleSaveChanges = async () => {
-    if (saving) return; // Prevent multiple simultaneous saves
+  if (saving) return;
+  setSaving(true);
+  try {
+    // Only include rows with user changes and positive rcdBox
+    const modified = items.filter(it => it.isModified && Number(it.rcdBox) > 0);
 
-    setSaving(true);
-    try {
-      const modifiedItems = items.filter(item => item.isModified);
-
-      if (modifiedItems.length === 0) {
-        setNotification({ message: 'No changes to save!', type: 'error' });
-        return;
-      }
-
-      let successCount = 0;
-      let errorCount = 0;
-
-      // Process each modified item
-      for (const item of modifiedItems) {
-        try {
-          // Check if record exists
-          const { data: existingRecord, error: checkError } = await supabase
-            .from('box_tracking')
-            .select('id, closing_balance, received_box')
-            .eq('customer', item.customer)
-            .eq('party', item.party)
-            .maybeSingle();
-
-          if (checkError && checkError.code !== 'PGRST116') {
-            console.error(`Error checking ${item.customer} - ${item.party}:`, checkError);
-            errorCount++;
-            continue;
-          }
-
-          const currentBalance = existingRecord?.closing_balance || item.total;
-          const currentReceivedBox = existingRecord?.received_box || 0;
-          const newClosingBalance = currentBalance - item.rcdBox;
-          const totalReceivedBox = currentReceivedBox + item.rcdBox;
-
-          if (existingRecord) {
-            // Update existing record
-            const { error: updateError } = await supabase
-              .from('box_tracking')
-              .update({
-                opening_balance: item.openingBalance,
-                todays_sales: item.todaySales,
-                total: item.total,
-                received_box: totalReceivedBox,
-                closing_balance: newClosingBalance,
-              })
-              .eq('id', existingRecord.id);
-
-            if (updateError) {
-              console.error(`Update error for ${item.customer} - ${item.party}:`, updateError);
-              errorCount++;
-            } else {
-              successCount++;
-            }
-          } else {
-            // Insert new record
-            const { error: insertError } = await supabase
-              .from('box_tracking')
-              .insert({
-                customer: item.customer,
-                party: item.party,
-                opening_balance: item.openingBalance,
-                todays_sales: item.todaySales,
-                total: item.total,
-                received_box: item.rcdBox,
-                closing_balance: newClosingBalance,
-              });
-
-            if (insertError) {
-              console.error(`Insert error for ${item.customer} - ${item.party}:`, insertError);
-              errorCount++;
-            } else {
-              successCount++;
-            }
-          }
-        } catch (itemError) {
-          console.error(`Error processing ${item.customer} - ${item.party}:`, itemError);
-          errorCount++;
-        }
-      }
-
-      // Show results
-      if (successCount > 0) {
-        setNotification({
-          message: `${successCount} record(s) saved successfully${errorCount > 0 ? `, ${errorCount} failed` : ''}!`,
-          type: errorCount > 0 ? 'error' : 'success'
-        });
-      } else {
-        setNotification({ message: 'No records were saved successfully.', type: 'error' });
-      }
-
-      // Refresh data to get updated balances
-      if (successCount > 0) {
-        await fetchData();
-      }
-
-    } catch (error) {
-      console.error('Save error:', error);
-      setNotification({ message: 'Error saving data. Please try again.', type: 'error' });
-    } finally {
+    if (modified.length === 0) {
+      setNotification({ message: 'No changes to save!', type: 'error' });
       setSaving(false);
+      return;
     }
-  };
+
+    // Build updates: prefer partyId/customerId if present; else fallback to names
+    const updates = modified.map(it => {
+      // @ts-ignore may exist on item from mapping
+      const partyId = (it as any).partyId ?? (it as any).party_id ?? null;
+      // @ts-ignore
+      const customerId = (it as any).customerId ?? (it as any).customer_id ?? null;
+
+      const base: any = {
+        receiveDelta: Number(it.rcdBox),
+      };
+
+      if (partyId != null && customerId != null && String(partyId).trim() !== '' && String(customerId).trim() !== '') {
+        base.partyId = partyId;
+        base.customerId = customerId;
+      } else {
+        base.partyName = it.party;
+        base.customerName = it.customer;
+      }
+
+      return base as any;
+    });
+
+    // Call API
+    const res = await receiveBoxes(updates);
+    // On success backend returns updated rows; you can inspect res.updated for details
+    setNotification({ message: `${modified.length} record(s) saved successfully!`, type: 'success' });
+
+    // Re-fetch authoritative data
+    await fetchData();
+  } catch (err: any) {
+    console.error('Save error', err);
+    // If server returns JSON message, axios puts it on err.response.data
+    const message = err?.response?.data?.message ?? err.message ?? 'Error saving data. Please try again.';
+    setNotification({ message, type: 'error' });
+  } finally {
+    setSaving(false);
+  }
+};
 
   if (loading) {
     return (
@@ -371,7 +257,7 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
                       {item.todaySales}
                     </td>
                     <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
-                      {item.total}
+                      {item.total},box-rec={item.totalReceived}
                     </td>
                     <td className={`border border-gray-300 dark:border-gray-600 px-4 py-3 ${
                       item.isModified

@@ -3,7 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import AdminBoard from '../../components/AdminBoard';
 import SearchableInput from '../../components/SearchableInput';
 import { Eye, FileText, Edit, Save, Trash2, Plus, X } from 'lucide-react';
-import { supabase } from '../../database/supabase';
+// import { supabase } from '../../database/supabase';
+import { listEntities } from '../../lib/entities';
+
+import { listSales, deleteSale, updateSale } from '../../lib/salesSummary';
+
 
 interface SalesEntry {
   id: string;
@@ -14,7 +18,9 @@ interface SalesEntry {
   items: Array<{
     id: string;
     item: string;
+    customer?: string
     box: string;
+    kg: string;
     price: string;
     total: string;
   }>;
@@ -41,6 +47,7 @@ interface EditModalProps {
   parties: { id: string; name: string }[];
   salesmenList: { id: string; name: string }[];
   products: { id: string; name: string }[];
+  customers: { id: string; name: string }[];
 }
 
 const EditModal: React.FC<EditModalProps> = ({
@@ -52,6 +59,7 @@ const EditModal: React.FC<EditModalProps> = ({
   parties,
   salesmenList,
   products,
+  customers
 }) => {
   const [editData, setEditData] = useState<SalesEntry | null>(null);
 
@@ -59,13 +67,21 @@ const EditModal: React.FC<EditModalProps> = ({
     if (entry) {
       const partyId = parties.find(p => p.name === entry.party)?.id || entry.party;
       const salesmanId = salesmenList.find(s => s.name === entry.salesman)?.id || entry.salesman;
+      //   const updatedItems = entry.items.map(item => {
+      //     const itemId = products.find(p => p.name === item.item)?.id || item.item;
+      //     return { ...item, item: itemId };
+      //   });
+      //   setEditData({ ...entry, party: partyId, salesman: salesmanId, items: updatedItems });
+      // }
       const updatedItems = entry.items.map(item => {
         const itemId = products.find(p => p.name === item.item)?.id || item.item;
-        return { ...item, item: itemId };
+        // try to find customer id from customers prop else keep as-is
+        const custId = customers.find(c => c.name === (item.customer || ""))?.id || item.customer || "";
+        return { ...item, item: itemId, customer: custId };
       });
       setEditData({ ...entry, party: partyId, salesman: salesmanId, items: updatedItems });
     }
-  }, [entry, parties, salesmenList, products]);
+  }, [entry, parties, salesmenList, products, customers]);
 
   if (!isOpen || !editData) return null;
 
@@ -178,7 +194,9 @@ const EditModal: React.FC<EditModalProps> = ({
     const newItem = {
       id: crypto.randomUUID(),
       item: '',
+      customer: '',
       box: '',
+      kg: '',
       price: '',
       total: '',
     };
@@ -194,13 +212,30 @@ const EditModal: React.FC<EditModalProps> = ({
     return newItem.id;
   };
 
+  // const handleSave = () => {
+  //   if (editData) {
+  //     onSave(editData);
+  //     onClose();
+  //   }
+  // };
   const handleSave = () => {
-    if (editData) {
-      onSave(editData);
-      onClose();
-    }
-  };
+    if (!editData) return;
 
+    // recompute grand total (server must also recompute, but we send accurate one)
+    const computedTotal = (editData.items || []).reduce((sum, it) => {
+      const t = parseFloat(String(it.total || "0")) || 0;
+      return sum + t;
+    }, 0);
+
+    // create a copy with updated totalAmount (string) so parent receives it
+    const payloadEntry: SalesEntry = {
+      ...editData,
+      totalAmount: String(computedTotal.toFixed(2))
+    };
+
+    onSave(payloadEntry);
+    onClose();
+  };
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-6xl w-full max-h-[90vh] overflow-y-auto">
@@ -213,7 +248,7 @@ const EditModal: React.FC<EditModalProps> = ({
             ×
           </button>
         </div>
-        
+
         <div className="p-6 space-y-6">
           {/* Header Information */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -237,7 +272,7 @@ const EditModal: React.FC<EditModalProps> = ({
                 onChange={(value) => handleInputChange('party', value)}
                 placeholder="Search Party"
                 searchData={parties}
-                onSelect={() => {}}
+                onSelect={() => { }}
                 createRoute="/create-party"
                 entityType="party"
               />
@@ -263,7 +298,7 @@ const EditModal: React.FC<EditModalProps> = ({
                 onChange={(value) => handleInputChange('salesman', value)}
                 placeholder="Search Salesman"
                 searchData={salesmenList}
-                onSelect={() => {}}
+                onSelect={() => { }}
                 createRoute="/create-salesman"
                 entityType="salesman"
               />
@@ -311,10 +346,16 @@ const EditModal: React.FC<EditModalProps> = ({
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-700">
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Customer
+                  </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Item
                   </th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Box
+                  </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                    kg
                   </th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Price
@@ -330,6 +371,29 @@ const EditModal: React.FC<EditModalProps> = ({
               <tbody>
                 {editData.items.map((item) => (
                   <tr key={item.id} className="bg-white dark:bg-gray-800">
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      <SearchableInput
+                        value={item.customer || ''}
+                        onChange={(value) => handleItemChange(item.id, 'customer', value)}
+                        placeholder="Search Customer"
+                        searchData={customers}
+                        onSelect={(customer) => handleItemChange(item.id, 'customer', customer.id)}
+                        createRoute="/create-customer"
+                        entityType="customer"
+                        data-field="customer"
+                        data-item-id={item.id}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.defaultPrevented) {
+                            setTimeout(() => {
+                              const nextInput = document.querySelector<HTMLInputElement>(
+                                `input[data-item-id="${item.id}"][data-field="box"]`
+                              );
+                              nextInput?.focus();
+                            }, 0);
+                          }
+                        }}
+                      />
+                    </td>
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                       <SearchableInput
                         value={item.item}
@@ -373,6 +437,31 @@ const EditModal: React.FC<EditModalProps> = ({
                       <input
                         type="number"
                         step="0.01"
+                        value={item.kg}
+                        onChange={(e) => handleItemChange(item.id, 'kg', e.target.value)}
+                        // optional: navigation, e.g. move to price on Enter
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            setTimeout(() => {
+                              const nextInput = document.querySelector<HTMLInputElement>(
+                                `input[data-item-id="${item.id}"][data-field="price"]`
+                              );
+                              nextInput?.focus();
+                            }, 0);
+                          }
+                        }}
+                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        placeholder="0.00"
+                        data-field="kg"
+                        data-item-id={item.id}
+                      />
+                    </td>
+
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      <input
+                        type="number"
+                        step="0.01"
                         value={item.price}
                         onChange={(e) => handleItemChange(item.id, 'price', e.target.value)}
                         onKeyDown={(e) => handleKeyDown(e, item.id, 'price')}
@@ -407,7 +496,7 @@ const EditModal: React.FC<EditModalProps> = ({
             </table>
           </div>
         </div>
-        
+
       </div>
     </div>
   );
@@ -430,6 +519,8 @@ const SalesSummary: React.FC = () => {
   const [products, setProducts] = useState<{ id: string; name: string }[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [entriesPerPage] = useState(25);
+  const [serverSummary, setServerSummary] = useState<{ totalSaleAmount: number; boxesAdded: number; boxesSold: number } | null>(null);
+  const [totalCount, setTotalCount] = useState<number>(0); // for pagination / header
 
   // Generate load number string
   const generateLoadNumberString = (num: number) => {
@@ -490,7 +581,7 @@ const SalesSummary: React.FC = () => {
     if (startDate && !endDate) setEndDate(startDate);
   }, [startDate, endDate]);
 
-  // Fetch from Supabase
+
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAuthenticated');
     if (!isAuthenticated) {
@@ -498,121 +589,103 @@ const SalesSummary: React.FC = () => {
       return;
     }
 
-    const fetchSales = async () => {
+    let cancelled = false;
+    const pageSizeForLookups = 500;
+
+    const loadLookups = async () => {
       try {
-        // Step 1: Fetch sales
-        const { data: salesData, error: salesError } = await supabase
-          .from('sales')
-          .select('*')
-          .order('created_at', { ascending: false });
-
-        if (salesError) throw salesError;
-
-        if (!salesData || salesData.length === 0) {
-          setSalesEntries([]);
-          return;
-        }
-
-        // Step 2: Fetch lookup tables
-        const [parties, salesmen, customers, products] = await Promise.all([
-          supabase.from('parties').select('id, name'),
-          supabase.from('salesmen').select('id, name'),
-          supabase.from('customers').select('id, name'),
-          supabase.from('products').select('id, name'),
+        const [partiesResp, salesmenResp, customersResp, productsResp] = await Promise.all([
+          listEntities('parties', { page: 1, pageSize: pageSizeForLookups }),
+          listEntities('salesmen', { page: 1, pageSize: pageSizeForLookups }),
+          listEntities('customers', { page: 1, pageSize: pageSizeForLookups }),
+          listEntities('products', { page: 1, pageSize: pageSizeForLookups }),
         ]);
 
-        // Create lookup maps
-        const partyMap = Object.fromEntries(
-          (parties.data || []).map((p) => [p.id, p.name])
-        );
-        const salesmanMap = Object.fromEntries(
-          (salesmen.data || []).map((s) => [s.id, s.name])
-        );
-        const customerMap = Object.fromEntries(
-          (customers.data || []).map((c) => [c.id, c.name])
-        );
-        const productMap = Object.fromEntries(
-          (products.data || []).map((p) => [p.id, p.name])
-        );
+        if (cancelled) return;
 
-        // Step 4: Map sales with names and generate load numbers for entries that don't have them
-        const mappedData: SalesEntry[] = salesData.map((sale, index) => {
-          let loadNumber = sale.load_number;
-          let loadNumberString = sale.load_number_string;
+        if (Array.isArray(partiesResp.data)) setParties(partiesResp.data.map((e: any) => ({ id: String(e.id), name: e.name })));
+        if (Array.isArray(salesmenResp.data)) setSalesmenList(salesmenResp.data.map((e: any) => ({ id: String(e.id), name: e.name })));
+        if (Array.isArray(customersResp.data)) setCustomers(customersResp.data.map((e: any) => ({ id: String(e.id), name: e.name })));
+        if (Array.isArray(productsResp.data)) setProducts(productsResp.data.map((e: any) => ({ id: String(e.id), name: e.name })));
+      } catch (err) {
+        console.error('Error loading lookups', err);
+        if (!cancelled) setNotification({ message: 'Failed loading lookup data', type: 'error' });
+      }
+    };
 
-          // Generate load number for entries that don't have one
-          if (!loadNumber || !loadNumberString) {
-            // Use the entry's position in the result set as a fallback
-            // This ensures consistency but isn't perfect for very old entries
-            loadNumber = sale.load_number || (salesData.length - index);
-            loadNumberString = sale.load_number_string || generateLoadNumberString(loadNumber);
-          }
+    const loadSales = async () => {
+      try {
+        const resp = await listSales({
+          from: startDate || undefined,
+          to: endDate || undefined,
+          salesman: selectedSalesman || undefined,
+          page: currentPage,
+          pageSize: entriesPerPage,
+        });
+
+        if (cancelled) return;
+
+        // Map server rows -> your SalesEntry format
+        const mapped = (resp.data || []).map((sale: any) => {
+          const items = Array.isArray(sale.items)
+            ? sale.items.map((it: any) => ({
+              id: String(it.id ?? crypto.randomUUID()),
+              item: it.product_name ?? it.productName ?? it.item ?? '',
+              box: it.box != null ? String(it.box) : '',
+              kg: it.kg != null ? String(it.kg) : '',
+              price: it.price != null ? String(it.price) : '',
+              total: it.total != null ? String(it.total) : '',
+              customer: it.customer_name ?? it.customerName ?? it.customer ?? '',
+            }))
+            : [];
+
+          const loadNumberString = sale.load_number_string ?? sale.loadNumberString ?? null;
 
           return {
-            id: sale.id,
+            id: String(sale.id),
             date: sale.date,
-            party: partyMap[sale.party] || sale.party,
-            totalBox: String(sale.total_box),
-            salesman: salesmanMap[sale.salesman] || sale.salesman,
-            items: (sale.items || []).map((item: { id: string; item: string; box: string; price: string; total: string; customer?: string }) => ({
-              ...item,
-              item: productMap[item.item] || item.item,
-              customer: customerMap[item.customer || ''] || item.customer,
-            })),
-            totalAmount: String(sale.total_amount),
-            createdAt: sale.created_at,
-            load_number: loadNumber,
-            load_number_string: loadNumberString,
+            party: sale.party_name ?? sale.partyName ?? sale.party ?? '',
+            totalBox: String(sale.total_box ?? sale.totalBox ?? 0),
+            salesman: sale.salesman_name ?? sale.salesmanName ?? sale.salesman ?? '',
+            items,
+            totalAmount: String(sale.total_amount ?? sale.totalAmount ?? 0),
+            createdAt: sale.created_at ?? sale.createdAt ?? '',
+            load_number: sale.load_number ?? sale.loadNumber ?? null,
+            load_number_string: loadNumberString ?? (sale.load_number ? loadNumberString(sale.load_number) : null),
           };
         });
 
-        setSalesEntries(mappedData);
-        
-        // Set the lookup data for the edit modal
-        setParties(parties.data || []);
-        setSalesmenList(salesmen.data || []);
-        setCustomers(customers.data || []);
-        setProducts(products.data || []);
-      } catch (err) {
-        console.error('Error fetching sales:', err);
-      }
-    };
+        setSalesEntries(mapped);
+        setTotalCount(resp.totalCount ?? 0);
 
-    fetchSales();
-  }, [navigate]);
-
-  // Fetch box entries data
-  useEffect(() => {
-    const fetchBoxEntries = async () => {
-      try {
-        const { data: boxData, error: boxError } = await supabase
-          .from('box_sales')
-          .select('id, date, party, total_box, created_at')
-          .order('created_at', { ascending: false });
-
-        if (boxError) throw boxError;
-
-        if (boxData) {
-          const mappedBoxData: BoxEntry[] = boxData.map((box) => ({
-            id: box.id,
-            date: box.date,
-            party: box.party,
-            totalBox: String(box.total_box),
-            createdAt: box.created_at,
-          }));
-          setBoxEntries(mappedBoxData);
+        if (resp.summary) {
+          setServerSummary({
+            totalSaleAmount: resp.summary.totalSaleAmount ?? resp.summary.totalSaleAmount ?? 0,
+            boxesAdded: resp.summary.boxesAdded ?? resp.summary.boxesAdded ?? 0,
+            boxesSold: resp.summary.boxesSold ?? resp.summary.boxesSold ?? 0,
+          });
+        } else {
+          setServerSummary(null);
         }
       } catch (err) {
-        console.error('Error fetching box entries:', err);
+        console.error('Error loading sales:', err);
+        if (!cancelled) setNotification({ message: 'Failed loading sales', type: 'error' });
       }
     };
 
-    fetchBoxEntries();
-  }, []);
+    // load both (lookups + sales)
+    loadLookups();
+    loadSales();
+
+    return () => { cancelled = true; };
+  }, [navigate, startDate, endDate, selectedSalesman, currentPage, entriesPerPage]);
+
+
+
 
   const viewDetails = (entry: SalesEntry) => setSelectedEntry(entry);
   const closeDetails = () => setSelectedEntry(null);
-  
+
   const handleEdit = (entry: SalesEntry) => {
     setEditingEntry(entry);
   };
@@ -629,86 +702,94 @@ const SalesSummary: React.FC = () => {
     setDeletingEntry(null);
   };
 
+
   const confirmDelete = async () => {
     if (!deletingEntry) return;
 
     try {
-      const { error } = await supabase
-        .from('sales')
-        .delete()
-        .eq('id', deletingEntry.id);
-
-      if (error) throw error;
-
-      // Update local state
+      await deleteSale(deletingEntry.id);
       setSalesEntries(prev => prev.filter(entry => entry.id !== deletingEntry.id));
-
       setNotification({ message: 'Sales entry deleted successfully!', type: 'success' });
       closeDelete();
-      closeEdit(); // Close the edit modal after successful deletion
+      closeEdit();
     } catch (err) {
       console.error('Error deleting sales entry:', err);
       setNotification({ message: 'Error deleting sales entry', type: 'error' });
     }
   };
 
+
   const handleSaveEdit = async (updatedEntry: SalesEntry) => {
     try {
-      // Create maps for quick lookup
+      // Create maps for quick lookup (for local state update after successful save)
       const partyMap = Object.fromEntries(parties.map(p => [p.id, p.name]));
       const salesmanMap = Object.fromEntries(salesmenList.map(s => [s.id, s.name]));
       const productMap = Object.fromEntries(products.map(p => [p.id, p.name]));
+      const customerMap = Object.fromEntries(customers.map(c => [c.id, c.name]));
 
-      // Use the IDs directly since updatedEntry now has IDs
-      const partyId = updatedEntry.party;
-      const salesmanId = updatedEntry.salesman;
-
-      // Items already have IDs
-      const updatedItems = updatedEntry.items.map(item => ({
-        ...item,
-        item: item.item, // Already ID
-      }));
-
-      // Update the entry in the database
-      const { error } = await supabase
-        .from('sales')
-        .update({
-          date: updatedEntry.date,
-          party: partyId,
-          total_box: parseInt(updatedEntry.totalBox),
-          salesman: salesmanId,
-          items: updatedItems,
-          total_amount: parseFloat(updatedEntry.totalAmount),
-        })
-        .eq('id', updatedEntry.id);
-
-      if (error) throw error;
-
-      // Map back to names for local state
-      const updatedEntryWithNames = {
-        ...updatedEntry,
-        party: partyMap[updatedEntry.party] || updatedEntry.party,
-        salesman: salesmanMap[updatedEntry.salesman] || updatedEntry.salesman,
-        items: updatedEntry.items.map(item => ({
-          ...item,
-          item: productMap[item.item] || item.item,
+      const payload = {
+        date: updatedEntry.date,
+        partyName: updatedEntry.party,
+        salesmanName: updatedEntry.salesman,
+        totalBox: parseInt(updatedEntry.totalBox || "0", 10),
+        entryNumber: updatedEntry.load_number ?? undefined,
+        // recompute on the client (server will also recompute for safety)
+        totalAmount: (updatedEntry.items || []).reduce((s, it) => s + (parseFloat(it.total || "0") || 0), 0),
+        items: (updatedEntry.items || []).map((it: any) => ({
+          // send customer id (if the modal stored id), otherwise fall back to name
+          customerName: it.customer || it.customerName || null,
+          productName: it.item || it.productName || null, // product id
+          box: it.box !== "" && it.box != null ? parseInt(String(it.box), 10) : 0,
+          kg: it.kg !== "" && it.kg != null ? Number(it.kg) : 0,
+          price: it.price !== "" && it.price != null ? parseFloat(String(it.price)) : 0,
+          total: it.total !== "" && it.total != null ? parseFloat(String(it.total)) : 0,
+          remark: it.remark ?? null,
         })),
       };
 
-      // Update local state
+      console.log(updatedEntry.id, payload, "id,payload");
+
+      // Call API helper to update
+      await updateSale(updatedEntry.id, payload);
+
+      // Map back to names for local UI state (so table shows names not IDs)
+      // const updatedEntryWithNames = {
+      //   ...updatedEntry,
+      //   party: partyMap[updatedEntry.party] ?? String(updatedEntry.party),
+      //   salesman: salesmanMap[updatedEntry.salesman] ?? String(updatedEntry.salesman),
+      //   items: (updatedEntry.items || []).map((it: any) => ({
+      //     ...it,
+      //     item: productMap[it.item] ?? String(it.item),
+      //   })),
+      // };
+
+      const updatedEntryWithNames = {
+        ...updatedEntry,
+        party: partyMap[updatedEntry.party] ?? String(updatedEntry.party),
+        salesman: salesmanMap[updatedEntry.salesman] ?? String(updatedEntry.salesman),
+        items: (updatedEntry.items || []).map((it: any) => ({
+          ...it,
+          item: productMap[it.item] ?? String(it.item),
+          customer: it.customer ? (customerMap[it.customer] ?? String(it.customer)) : it.customer,
+        })),
+      };
+
+
+      // Replace in local state
       setSalesEntries(prev =>
-        prev.map(entry =>
-          entry.id === updatedEntry.id ? updatedEntryWithNames : entry
-        )
+        prev.map(entry => (entry.id === updatedEntry.id ? updatedEntryWithNames : entry))
       );
 
       setNotification({ message: 'Sales entry updated successfully!', type: 'success' });
       closeEdit();
-    } catch (err) {
+    } catch (err: any) {
       console.error('Error updating sales entry:', err);
-      setNotification({ message: 'Error updating sales entry', type: 'error' });
+      // Try to show server message if available
+      const message = err?.response?.data?.message || err?.message || 'Error updating sales entry';
+      setNotification({ message, type: 'error' });
     }
   };
+
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -727,11 +808,10 @@ const SalesSummary: React.FC = () => {
       {/* Notification Toast */}
       {notification && (
         <div className="fixed top-4 right-4 z-50">
-          <div className={`px-4 py-3 rounded-lg shadow-lg border ${
-            notification.type === 'success'
+          <div className={`px-4 py-3 rounded-lg shadow-lg border ${notification.type === 'success'
               ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
               : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
-          }`}>
+            }`}>
             <div className="flex items-center space-x-2">
               {notification.type === 'success' ? (
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -794,7 +874,7 @@ const SalesSummary: React.FC = () => {
                 <FileText className="w-4 h-4" />
                 <span>{filteredEntries.length} entries found</span>
               </div>
-          
+
               {/* Pagination Info - Always show for consistent UI */}
               <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
                 <span>Page {currentPage} of {totalPages}</span>
@@ -957,7 +1037,7 @@ const SalesSummary: React.FC = () => {
                   ×
                 </button>
               </div>
-              
+
               <div className="p-6 space-y-6">
                 {/* Header Information */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -993,10 +1073,16 @@ const SalesSummary: React.FC = () => {
                     <thead>
                       <tr className="bg-gray-50 dark:bg-gray-700">
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                          Customer
+                        </th>
+                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                           Item
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                           Box
+                        </th>
+                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                          kg
                         </th>
                         <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                           Price
@@ -1010,10 +1096,16 @@ const SalesSummary: React.FC = () => {
                       {selectedEntry.items.map((item) => (
                         <tr key={item.id} className="bg-white dark:bg-gray-800">
                           <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                            {item.customer || '-'}
+                          </td>
+                          <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
                             {item.item}
                           </td>
                           <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
                             {item.box}
+                          </td>
+                          <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                            {item.kg}
                           </td>
                           <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
                             ₹{item.price}
@@ -1041,6 +1133,7 @@ const SalesSummary: React.FC = () => {
           parties={parties}
           salesmenList={salesmenList}
           products={products}
+          customers={customers}
         />
 
         {/* Delete Confirmation Modal */}

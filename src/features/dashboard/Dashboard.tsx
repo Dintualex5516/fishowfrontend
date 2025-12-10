@@ -1,10 +1,21 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminBoard from '../../components/AdminBoard';
 import { TruckIcon, Package, BarChart3, Users } from 'lucide-react';
+import { getDashboardMetrics } from "../../lib/dashboardApi";
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
+
+   const [loading, setLoading] = useState(true);
+  const [metrics, setMetrics] = useState({
+    totalSales: 0,
+    activeCustomers: 0,
+    boxesTotal: 0,
+    boxesItems: 0,
+    boxesBoxSale: 0,
+    activeParties: 0,
+  });
 
   useEffect(() => {
     const isAuthenticated = localStorage.getItem('isAuthenticated');
@@ -13,28 +24,48 @@ const Dashboard: React.FC = () => {
     }
   }, [navigate]);
 
+  useEffect(() => {
+    (async () => {
+      try {
+        const m = await getDashboardMetrics();
+        setMetrics({
+          totalSales: m.totalSales,
+          activeCustomers: m.activeCustomers,
+          boxesTotal: m.boxes.totalBoxes,
+          boxesItems: m.boxes.itemsBoxes,
+          boxesBoxSale: m.boxes.boxSaleBoxes,
+          activeParties: m.activeParties,
+        });
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+  const nf = new Intl.NumberFormat();
   const stats = [
     {
       name: 'Total Sales',
-      value: '156',
+      value: nf.format(metrics.totalSales),
       icon: BarChart3,
       color: 'bg-blue-500',
     },
     {
-      name: 'Active Loads',
-      value: '23',
-      icon: TruckIcon,
+      name: 'Active Customers',
+       value: nf.format(metrics.activeCustomers),
+      icon: Users,
       color: 'bg-green-500',
     },
     {
       name: 'Boxes Sent',
-      value: '1,234',
+      value: nf.format(metrics.boxesTotal),
       icon: Package,
       color: 'bg-purple-500',
     },
     {
       name: 'Active Parties',
-      value: '45',
+      value: nf.format(metrics.activeParties),
       icon: Users,
       color: 'bg-orange-500',
     },
@@ -52,7 +83,7 @@ const Dashboard: React.FC = () => {
         </div>
 
         {/* Stats Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat) => (
             <div
               key={stat.name}
@@ -67,6 +98,25 @@ const Dashboard: React.FC = () => {
                   <p className="text-2xl font-bold text-gray-900 dark:text-white">
                     {stat.value}
                   </p>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div> */}
+ <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          {stats.map((stat) => (
+            <div
+              key={stat.name}
+              className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 border border-gray-200 dark:border-gray-600"
+              title={(stat as any).tooltip || ""}
+            >
+              <div className="flex items-center">
+                <div className={`${stat.color} p-3 rounded-lg`}>
+                  <stat.icon className="w-6 h-6 text-white" />
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-700 dark:text-gray-300 font-medium">{stat.name}</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                 </div>
               </div>
             </div>
