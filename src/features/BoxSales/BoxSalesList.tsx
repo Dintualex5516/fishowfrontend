@@ -114,7 +114,11 @@ const EditModal: React.FC<EditModalProps> = ({
       const updatedItems = entry.items.map(item => {
         const itemId = products.find(p => p.name === item.item)?.id || item.item;
         const customerId = customers.find(c => c.name === item.customer)?.id || item.customer;
-        return { ...item, item: itemId, customer: customerId };
+        const boxTypeId =
+    parties.find(p => p.name === item.box_type)?.id || // if name coming from FE mapping
+    parties.find(p => p.id === String(item.box_type))?.id || // if ID already in place
+    item.box_type;
+        return { ...item, item: itemId, customer: customerId,box_type: boxTypeId, };
       });
       setEditData({ ...entry, party: partyId, salesman: salesmanId, items: updatedItems });
     }
@@ -436,7 +440,7 @@ const EditModal: React.FC<EditModalProps> = ({
                       </p>
                     </td> */}
 
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                    {/* <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                       <input
                         type="text"
                         value={item.box_type ?? ''}
@@ -447,7 +451,32 @@ const EditModal: React.FC<EditModalProps> = ({
                         data-item-id={item.id}
                         className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                       />
-                    </td>
+                    </td> */}
+<td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+  <SearchableInput
+    // value={
+    //   parties.find(p => p.id === String(item.box_type))?.name || ""
+    // }
+    value={parties.find(p => p.id === String(item.box_type))?.name || ""}
+
+    onChange={(value) => {
+      // this is user typing name, but we store raw text until they select
+      handleItemChange(item.id, "box_type", value);
+    }}
+    placeholder="Select Party (Box Type)"
+    searchData={parties}
+    onSelect={(party) => {
+      // When selecting → store ID only
+      handleItemChange(item.id, "box_type", party.id);
+    }}
+    createRoute="/create-party"
+    entityType="party"
+    data-field="box_type"
+    data-item-id={item.id}
+    onKeyDown={(e) => handleKeyDown(e, item.id, "box_type")}
+  />
+</td>
+
 
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                       <SearchableInput
@@ -605,7 +634,7 @@ const BoxSalesList: React.FC = () => {
       // call backend route that groups by load and returns KPIs
       const resp = await listBoxSaleRows({ from, to });
 
-      console.log(resp)
+      console.log(resp,"list includes box type")
 
       const entries: BoxSalesEntry1[] = (resp.items || []).map((e: ApiBoxEntry) => {
         return {
@@ -626,7 +655,9 @@ const BoxSalesList: React.FC = () => {
             price: String(Number(it.price ?? 0)),
             total: String(Number(it.total_amount ?? 0)),
             customer: it.customer ?? '',
-            box_type: it.box_type ?? null
+            // box_type: it.box_type ?? null
+            box_type: it.box_type ? String(it.box_type) : null
+
           })),
           totalAmount: String(Number(e.total_amount ?? 0)),
           createdAt: e.created_at ?? '',
@@ -751,7 +782,9 @@ const BoxSalesList: React.FC = () => {
           price: Number(it.price || 0),
           total: Number(it.total || 0),
           customer: it.customer,
-          box_type: it.box_type ?? null,
+          // box_type: it.box_type ?? null,
+          box_type: Number(it.box_type) || null,
+
         })),
         // optionally load_number/load_number_str if you want to change them
         load_number: updatedEntry.load_number,
@@ -1114,7 +1147,11 @@ const BoxSalesList: React.FC = () => {
                             {item.box}
                           </td>
                           <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-white">
-                            {item.box_type}
+                            {/* {item.box_type} */}
+                            <td>
+  {parties.find(p => p.id === String(item.box_type))?.name || ""}
+</td>
+
                             {/* {selectedEntry.party} */}
                           </td>
                           <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-white">

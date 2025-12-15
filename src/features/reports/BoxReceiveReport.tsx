@@ -37,23 +37,26 @@ const BoxReceiveReport: React.FC<BoxReceiveReportProps> = ({ dateRange }) => {
 
   const handleSave = async () => {
     const entries = Object.entries(typeInputs)
-  .map(([rowId, val]) => {
-    const n = Number(val);
-    if (!n || n <= 0 || Number.isNaN(n)) return null;
-    const row = data.find(r => r.id === rowId);
-    if (!row) return null;
-    // use the actual fields present on row
-    return {
-      partyName: row.party,         // was row._partyName
-      customerName: row.customer,   // was row._customerName
-      boxes: n,
-      date: new Date(row.date).toISOString().split("T")[0],
-    };
-  })
-  .filter(Boolean) as Array<{ partyName: string; customerName: string; boxes: number; date: string }>;
+      .map(([rowId, val]) => {
+        const n = Number(val);
+        if (!n || n <= 0 || Number.isNaN(n)) return null;
+        const row = data.find((r) => r.id === rowId);
+        if (!row) return null;
+        return {
+          partyName: row.party,
+          customerName: row.customer,
+          boxes: n,
+          date: new Date(row.date).toISOString().split("T")[0],
+        };
+      })
+      .filter(Boolean) as Array<{
+        partyName: string;
+        customerName: string;
+        boxes: number;
+        date: string;
+      }>;
 
-console.log("Prepared payloads for box receive:", entries);
-      
+    console.log("Prepared payloads for box receive:", entries);
 
     if (!entries.length) {
       setSaveMsg("Nothing to save");
@@ -62,7 +65,6 @@ console.log("Prepared payloads for box receive:", entries);
     }
 
     try {
-      // send sequentially (safe). If many rows, we can batch with Promise.allSettled
       for (const p of entries) {
         await addBoxReceive(p);
       }
@@ -106,7 +108,7 @@ console.log("Prepared payloads for box receive:", entries);
   }
 
   const totalBoxes = data.reduce((sum, r) => sum + (r.totalBox || 0), 0);
-  const totalSold  = data.reduce((sum, r) => sum + (r.boxesSold || 0), 0);
+  const totalSold = data.reduce((sum, r) => sum + (r.boxesSold || 0), 0);
 
   return (
     <div className="space-y-6">
@@ -116,7 +118,9 @@ console.log("Prepared payloads for box receive:", entries);
         </h2>
         <div className="flex items-center gap-2 print:hidden">
           {saveMsg && (
-            <span className="text-sm text-gray-700 dark:text-gray-300 mr-2">{saveMsg}</span>
+            <span className="text-sm text-gray-700 dark:text-gray-300 mr-2">
+              {saveMsg}
+            </span>
           )}
           <button
             onClick={handleSave}
@@ -148,27 +152,43 @@ console.log("Prepared payloads for box receive:", entries);
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Balance</th>
             </tr>
           </thead>
+
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
             {data.map((row) => {
               const typed = Number(typeInputs[row.id] ?? "");
               const receivedNow = Number.isFinite(typed) ? Math.max(0, typed) : 0;
               const liveBalance = row.boxesSold - receivedNow;
+
               return (
                 <tr key={row.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                     {new Date(row.date).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{row.party}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{row.totalBox}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{row.salesman}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{row.customer}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{row.item}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{row.boxesSold},box-rec={row.boxReceived}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                    {row.party}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                    {row.totalBox}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                    {row.salesman}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                    {row.customer}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                    {row.item}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                    {row.boxesSold}
+                  </td>
+
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 flex items-center gap-2">
+                    <span>{row.boxReceived}</span>
                     <input
                       type="number"
                       min={0}
-                      className="w-36 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                      className="w-20 px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm text-center"
                       value={typeInputs[row.id] ?? ""}
                       onChange={(e) =>
                         setTypeInputs((prev) => ({ ...prev, [row.id]: e.target.value }))
@@ -176,8 +196,17 @@ console.log("Prepared payloads for box receive:", entries);
                       placeholder="Enter"
                     />
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                    {Number.isFinite(typed) && typed !== 0 ? liveBalance : row.balance}
+
+                  <td
+                    className={`px-6 py-4 whitespace-nowrap text-sm ${
+                      (Number.isFinite(typed) && typed !== 0 ? liveBalance : row.balance) < 0
+                        ? "text-red-500"
+                        : "text-green-500"
+                    }`}
+                  >
+                    {Number.isFinite(typed) && typed !== 0
+                      ? liveBalance
+                      : row.balance}
                   </td>
                 </tr>
               );
@@ -186,9 +215,9 @@ console.log("Prepared payloads for box receive:", entries);
         </table>
       </div>
 
-      {/* Totals (optional) */}
-      <div className="text-sm text-gray-700 dark:text-gray-300">
-        Total Boxes: <b>{totalBoxes}</b> &nbsp;|&nbsp; Boxes Sold: <b>{totalSold}</b>
+      <div className="text-sm text-gray-900 dark:text-gray-200">
+        Total Boxes: <b>{totalBoxes}</b> &nbsp;|&nbsp; Boxes Sold:{" "}
+        <b>{totalSold}</b>
       </div>
     </div>
   );
