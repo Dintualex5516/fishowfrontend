@@ -205,7 +205,7 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
                       <input
                         type="text"
                         value={item.rcdBox === 0 ? '' : item.rcdBox.toString()}
-                        placeholder={`Prev: ${item.totalReceived}`}
+                        placeholder={`Today's Entry: ${item.totalReceived}`}
                         onChange={(e) => {
                           const val = e.target.value;
                           if (val === '' || /^\d+$/.test(val)) {
