@@ -271,7 +271,7 @@ const CashStatement = () => {
                                {row.salesman }
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-                              {row.kg}
+                              {row.boxesSold}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                               {row.price.toFixed(4)}
