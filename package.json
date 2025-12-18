@@ -6,10 +6,11 @@
   
  "scripts": {
   "dev": "vite",
-  "build": "vite build",
+  "build": "npx vite build",
   "lint": "eslint .",
   "preview": "vite preview"
-},
+}
+,
   "dependencies": {
     "@supabase/supabase-js": "^2.55.0",
     "axios": "^1.12.2",
