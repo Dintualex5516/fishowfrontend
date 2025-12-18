@@ -146,7 +146,7 @@ const BoxReceiveReport: React.FC<BoxReceiveReportProps> = ({ dateRange }) => {
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Total Box</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Salesman</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Customer</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Item</th>
+              {/* <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Item</th> */}
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Boxes Sold</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Box Received</th>
               <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Balance</th>
@@ -176,9 +176,9 @@ const BoxReceiveReport: React.FC<BoxReceiveReportProps> = ({ dateRange }) => {
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                     {row.customer}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                  {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                     {row.item}
-                  </td>
+                  </td> */}
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
                     {row.boxesSold}
                   </td>

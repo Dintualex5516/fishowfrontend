@@ -6,6 +6,7 @@ import { Eye, FileText, Edit, Save, Trash2, Plus, X } from 'lucide-react';
 import { deleteBoxSaleRow, listBoxSaleRows, updateBoxSaleRow } from '../../lib/boxSale';
 import { listEntities } from '../../lib/entities';
 
+
 interface BoxSalesEntry {
   id: string;
   date: string;
@@ -14,13 +15,11 @@ interface BoxSalesEntry {
   salesman: string;
   items: Array<{
     id: string;
-    item: string;
-    box: string;
-    price: string;
-    total: string;
     customer: string;
+    box: string;
     box_type?: string | null;
   }>;
+
   totalAmount: string;
   createdAt: string;
   load_number?: number;
@@ -60,12 +59,11 @@ type ApiBoxEntry = {
 // The UI shape you were using (example — adapt if your component's BoxSalesEntry differs)
 type UiItem = {
   id: string;
-  item: string;
-  box: string;
-  price: string;
-  total: string;
   customer: string;
+  box: string;
+  box_type?: string | null;
 };
+
 
 type BoxSalesEntry1 = {
   id: string;
@@ -112,13 +110,13 @@ const EditModal: React.FC<EditModalProps> = ({
       const partyId = parties.find(p => p.name === entry.party)?.id || entry.party;
       const salesmanId = salesmenList.find(s => s.name === entry.salesman)?.id || entry.salesman;
       const updatedItems = entry.items.map(item => {
-        const itemId = products.find(p => p.name === item.item)?.id || item.item;
+        // const itemId = products.find(p => p.name === item.item)?.id || item.item;
         const customerId = customers.find(c => c.name === item.customer)?.id || item.customer;
         const boxTypeId =
-    parties.find(p => p.name === item.box_type)?.id || // if name coming from FE mapping
-    parties.find(p => p.id === String(item.box_type))?.id || // if ID already in place
-    item.box_type;
-        return { ...item, item: itemId, customer: customerId,box_type: boxTypeId, };
+          parties.find(p => p.name === item.box_type)?.id || // if name coming from FE mapping
+          parties.find(p => p.id === String(item.box_type))?.id || // if ID already in place
+          item.box_type;
+        return { ...item, customer: customerId, box_type: boxTypeId, };
       });
       setEditData({ ...entry, party: partyId, salesman: salesmanId, items: updatedItems });
     }
@@ -132,12 +130,8 @@ const EditModal: React.FC<EditModalProps> = ({
       const updatedItems = prev.items.map(item => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
-          // Recalculate total if box or price changes
-          if (field === 'box' || field === 'price') {
-            const boxQty = parseFloat(field === 'box' ? value : updatedItem.box) || 0;
-            const price = parseFloat(field === 'price' ? value : updatedItem.price) || 0;
-            updatedItem.total = (boxQty * price).toFixed(2);
-          }
+
+
           return updatedItem;
         }
         return item;
@@ -241,13 +235,11 @@ const EditModal: React.FC<EditModalProps> = ({
 
     const newItem = {
       id: crypto.randomUUID(),
-      item: '',
-      box: '',
-      price: '',
-      total: '',
       customer: '',
+      box: '',
       box_type: '',
     };
+
 
     setEditData(prev => {
       if (!prev) return null;
@@ -384,18 +376,18 @@ const EditModal: React.FC<EditModalProps> = ({
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Box Type
                   </th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {/* <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Items
-                  </th>
+                  </th> */}
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Box
                   </th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                  {/* <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Price
                   </th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Total
-                  </th>
+                  </th> */}
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-200 w-20">
                     Action
                   </th>
@@ -434,77 +426,33 @@ const EditModal: React.FC<EditModalProps> = ({
                         }}
                       />
                     </td>
-                    {/* <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                      <p className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white text-sm">
-                        {item.box_type ?? ''}
-                      </p>
-                    </td> */}
-
-                    {/* <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                      <input
-                        type="text"
-                        value={item.box_type ?? ''}
-                        onChange={(e) => handleItemChange(item.id, 'box_type', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, item.id, 'box_type')}
-                        placeholder="Box type"
-                        data-field="box_type"
-                        data-item-id={item.id}
-                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                      />
-                    </td> */}
-<td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-  <SearchableInput
-    // value={
-    //   parties.find(p => p.id === String(item.box_type))?.name || ""
-    // }
-    value={parties.find(p => p.id === String(item.box_type))?.name || ""}
-
-    onChange={(value) => {
-      // this is user typing name, but we store raw text until they select
-      handleItemChange(item.id, "box_type", value);
-    }}
-    placeholder="Select Party (Box Type)"
-    searchData={parties}
-    onSelect={(party) => {
-      // When selecting → store ID only
-      handleItemChange(item.id, "box_type", party.id);
-    }}
-    createRoute="/create-party"
-    entityType="party"
-    data-field="box_type"
-    data-item-id={item.id}
-    onKeyDown={(e) => handleKeyDown(e, item.id, "box_type")}
-  />
-</td>
-
-
+                    
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                       <SearchableInput
-                        value={item.item}
-                        onChange={(value) => handleItemChange(item.id, 'item', value)}
-                        placeholder="Search Box Type"
-                        searchData={products}
-                        onSelect={(product) => handleItemChange(item.id, 'item', product.id)}
-                        createRoute="/create-item"
-                        entityType="item"
-                        data-field="item"
-                        data-item-id={item.id}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' && !e.defaultPrevented) {
-                            // Move to box field in same row only if dropdown is not open
-                            setTimeout(() => {
-                              const nextInput = document.querySelector<HTMLInputElement>(
-                                `input[data-item-id="${item.id}"][data-field="box"]`
-                              );
-                              nextInput?.focus();
-                            }, 0);
-                          } else {
-                            // For other keys, call the parent's handleKeyDown
-                            handleKeyDown(e, item.id, 'item');
-                          }
+                        // value={
+                        //   parties.find(p => p.id === String(item.box_type))?.name || ""
+                        // }
+                        value={parties.find(p => p.id === String(item.box_type))?.name || ""}
+
+                        onChange={(value) => {
+                          // this is user typing name, but we store raw text until they select
+                          handleItemChange(item.id, "box_type", value);
                         }}
+                        placeholder="Select Party (Box Type)"
+                        searchData={parties}
+                        onSelect={(party) => {
+                          // When selecting → store ID only
+                          handleItemChange(item.id, "box_type", party.id);
+                        }}
+                        createRoute="/create-party"
+                        entityType="party"
+                        data-field="box_type"
+                        data-item-id={item.id}
+                        onKeyDown={(e) => handleKeyDown(e, item.id, "box_type")}
                       />
                     </td>
+
+
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                       <input
                         type="number"
@@ -517,28 +465,7 @@ const EditModal: React.FC<EditModalProps> = ({
                         data-item-id={item.id}
                       />
                     </td>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={item.price || ''}
-                        onChange={(e) => handleItemChange(item.id, 'price', e.target.value)}
-                        onKeyDown={(e) => handleKeyDown(e, item.id, 'price')}
-                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                        placeholder="0.00"
-                        data-field="price"
-                        data-item-id={item.id}
-                      />
-                    </td>
-                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
-                      <input
-                        type="text"
-                        value={item.total}
-                        readOnly
-                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
-                        placeholder="0.00"
-                      />
-                    </td>
+                    
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                       <button
                         onClick={() => removeRow(item.id)}
@@ -582,6 +509,9 @@ const BoxSalesList: React.FC = () => {
   const [kpis, setKpis] = useState<{ totalSale: number; boxesAdded: number; boxesSold: number; currentBalance: number } | null>(null);
   const [loadingLookups, setLoadingLookups] = useState(false);
   // Generate load number string
+  const getPartyName = (id?: string | null) =>
+  parties.find(p => p.id === String(id))?.name ?? "";
+
   const generateLoadNumberString = (num: number) => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
     const letterIndex = Math.floor((num - 1) / 1000);
@@ -634,7 +564,7 @@ const BoxSalesList: React.FC = () => {
       // call backend route that groups by load and returns KPIs
       const resp = await listBoxSaleRows({ from, to });
 
-      console.log(resp,"list includes box type")
+      console.log(resp, "list includes box type")
 
       const entries: BoxSalesEntry1[] = (resp.items || []).map((e: ApiBoxEntry) => {
         return {
@@ -650,15 +580,12 @@ const BoxSalesList: React.FC = () => {
           salesman: e.salesman ?? '',
           items: (e.items ?? []).map((it: ApiBoxItem) => ({
             id: String(it.id ?? ''),
-            item: it.product_name ?? '',        // map product_name -> item
-            box: String(Number(it.box ?? 0)),   // ensure string for UI
-            price: String(Number(it.price ?? 0)),
-            total: String(Number(it.total_amount ?? 0)),
             customer: it.customer ?? '',
-            // box_type: it.box_type ?? null
-            box_type: it.box_type ? String(it.box_type) : null
+            box: String(it.box ?? 0),
+            box_type: it.box_type ? String(it.box_type) : null,
+          }))
 
-          })),
+          ,
           totalAmount: String(Number(e.total_amount ?? 0)),
           createdAt: e.created_at ?? '',
           load_number: e.load_number ?? undefined,
@@ -776,16 +703,11 @@ const BoxSalesList: React.FC = () => {
         total_amount: Number(updatedEntry.totalAmount || 0),
         // You may store items JSON in the row; if so include items
         items: updatedEntry.items.map(it => ({
-          id: it.id,
-          item: it.item, // product id or name depending on your model
-          box: Number(it.box || 0),
-          price: Number(it.price || 0),
-          total: Number(it.total || 0),
           customer: it.customer,
-          // box_type: it.box_type ?? null,
-          box_type: Number(it.box_type) || null,
-
-        })),
+          box: Number(it.box || 0),
+          box_type: it.box_type ? Number(it.box_type) : null,
+        }))
+        ,
         // optionally load_number/load_number_str if you want to change them
         load_number: updatedEntry.load_number,
         load_number_str: updatedEntry.load_number_string,
@@ -919,17 +841,8 @@ const BoxSalesList: React.FC = () => {
           </div>
 
           {/* Summary Boxes - All in one line */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-            <div className="text-center">
-              <div className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Total Sale</div>
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {/* ₹{filteredEntries.reduce((sum, entry) => sum + (parseFloat(entry.totalAmount) || 0), 0).toFixed(2)} */}
-                ₹{kpis?.totalSale.toFixed(2)}
-              </div>
-              <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                Total amount from {filteredEntries.length} entries
-              </div>
-            </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+            
             <div className="text-center">
               <div className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Boxes Added</div>
               <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -1149,8 +1062,11 @@ const BoxSalesList: React.FC = () => {
                           <td className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-sm text-gray-900 dark:text-white">
                             {/* {item.box_type} */}
                             <td>
-  {parties.find(p => p.id === String(item.box_type))?.name || ""}
-</td>
+                              {/* {parties.find(p => p.id === String(item.box_type))?.name || ""} */}
+                            {getPartyName(item.box_type)}
+
+                            </td>
+
 
                             {/* {selectedEntry.party} */}
                           </td>
