@@ -1,5 +1,10 @@
 {
+  "framework": "vite",
+  "buildCommand": "node node_modules/vite/bin/vite.js build",
+  "outputDirectory": "dist",
   "rewrites": [
     { "source": "/(.*)", "destination": "/" }
   ]
-}
+}git add package.json vercel.json
+git commit -m "Bypass Vercel vite binary permission issue"
+git push origin main
