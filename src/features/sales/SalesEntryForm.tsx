@@ -237,9 +237,9 @@ const SalesEntryForm: React.FC = () => {
   const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
 
   // Default values for new rows
-  const [defaultCustomer, setDefaultCustomer] = useState('');
-  const [defaultPrice, setDefaultPrice] = useState('');
-  const [defaultItem, setDefaultItem] = useState('');
+  // const [defaultCustomer, setDefaultCustomer] = useState('');
+  // const [defaultPrice, setDefaultPrice] = useState('');
+  // const [defaultItem, setDefaultItem] = useState('');
 
   // Initialize with current date in YYYY-MM-DD format
   const getCurrentDate = () => {
@@ -421,12 +421,12 @@ if (prodResp && Array.isArray(prodResp.data)) {
   const addItem = () => {
     const newItem: SalesItem = {
       id: crypto.randomUUID(), // optional temporary UUID for React
-      customer: defaultCustomer,
+      customer: '',
       box: '',
       kg: '',
-      price: defaultPrice,
+      price: '',
       total: '',
-      item: defaultItem,
+      item: '',
       remark: '',
     };
     setItems([newItem, ...items]);
@@ -447,15 +447,15 @@ if (prodResp && Array.isArray(prodResp.data)) {
             const updatedItem = { ...item, [field]: value };
 
             // Update defaults when customer, price, or item is changed
-            if (field === 'customer') {
-              setDefaultCustomer(value);
-            }
-            if (field === 'price') {
-              setDefaultPrice(value);
-            }
-            if (field === 'item') {
-              setDefaultItem(value);
-            }
+            // if (field === 'customer') {
+            //   setDefaultCustomer(value);
+            // }
+            // if (field === 'price') {
+            //   setDefaultPrice(value);
+            // }
+            // if (field === 'item') {
+            //   setDefaultItem(value);
+            // }
 
             // Auto-calculate total when box, kg, or price changes
             if (field === 'box' || field === 'kg' || field === 'price') {
@@ -587,12 +587,12 @@ const fetchAndLoadLastEntry = useCallback(async () => {
         setTimeout(() => {
           const newItem: SalesItem = {
             id: crypto.randomUUID(),
-            customer: defaultCustomer,
+            customer: '',
             box: "",
             kg: "",
-            price: defaultPrice,
+            price: '',
             total: "",
-            item: defaultItem,
+            item: '',
             remark: "",
           };
           setItems(prev => [newItem, ...prev]);
@@ -683,12 +683,12 @@ const loadEntryData = useCallback(async (entryNum: string) => {
       setTimeout(() => {
         const newItem: SalesItem = {
           id: crypto.randomUUID(),
-          customer: defaultCustomer,
+          customer: '',
           box: "",
           kg: "",
-          price: defaultPrice,
+          price: '',
           total: "",
-          item: defaultItem,
+          item: '',
           remark: "",
         };
         setItems(prev => [newItem, ...prev]);
@@ -1000,9 +1000,9 @@ const loadEntryData = useCallback(async (entryNum: string) => {
             setItems(parsedData.items || items);
             // Set defaults from first item if available
             if (parsedData.items && parsedData.items.length > 0) {
-              setDefaultCustomer(parsedData.items[0].customer || '');
-              setDefaultPrice(parsedData.items[0].price || '');
-              setDefaultItem(parsedData.items[0].item || '');
+              // setDefaultCustomer(parsedData.items[0].customer || '');
+              // setDefaultPrice(parsedData.items[0].price || '');
+              // setDefaultItem(parsedData.items[0].item || '');
             }
             setLastAutosave(new Date(parsedData.lastAutosave));
             setAutosaveStatus('idle');
@@ -1094,9 +1094,9 @@ const loadEntryData = useCallback(async (entryNum: string) => {
     setParty("");
     setSalesman("");
     setManualTotalBox("");
-    setDefaultCustomer("");
-    setDefaultPrice("");
-    setDefaultItem("");
+    // setDefaultCustomer("");
+    // setDefaultPrice("");
+    // setDefaultItem("");
 
     const newItem: SalesItem = {
       id: crypto.randomUUID(),

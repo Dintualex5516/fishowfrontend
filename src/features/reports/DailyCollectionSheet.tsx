@@ -13,77 +13,77 @@ const DailyCollectionSheet: React.FC<DailyCollectionSheetProps> = ({ date }) => 
   const [discountInputs, setDiscountInputs] = useState<Record<string, number | undefined>>({});
   const [saveMessage, setSaveMessage] = useState("");
 
-useEffect(() => {
-  if (!date) return;
-  (async () => {
-    setLoading(true);
-    try {
-      const { rows: apiRows } = await getLedgerCollection(date);
-      // set rows directly — they contain customer: { id, name }
-      setRows(apiRows);
+  useEffect(() => {
+    if (!date) return;
+    (async () => {
+      setLoading(true);
+      try {
+        const { rows: apiRows } = await getLedgerCollection(date);
+        // set rows directly — they contain customer: { id, name }
+        setRows(apiRows);
 
-      // Prefill Paid/Discount inputs keyed by id-or-name
-      const paidPrefill: Record<string, number> = {};
-      const discPrefill: Record<string, number> = {};
-      for (const r of apiRows) {
-        const key = typeof r.customer === 'object' && r.customer !== null
-          ? (r.customer.id ?? r.customer.name)
-          : (r.customer as string);
+        // Prefill Paid/Discount inputs keyed by id-or-name
+        const paidPrefill: Record<string, number> = {};
+        const discPrefill: Record<string, number> = {};
+        for (const r of apiRows) {
+          const key = typeof r.customer === 'object' && r.customer !== null
+            ? (r.customer.id ?? r.customer.name)
+            : (r.customer as string);
 
-        if (r.paid) paidPrefill[key] = Number(r.paid) || 0;
-        if (r.discount) discPrefill[key] = Number(r.discount) || 0;
+          if (r.paid) paidPrefill[key] = Number(r.paid) || 0;
+          if (r.discount) discPrefill[key] = Number(r.discount) || 0;
+        }
+        setPaidInputs(paidPrefill);
+        setDiscountInputs(discPrefill);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
       }
-      setPaidInputs(paidPrefill);
-      setDiscountInputs(discPrefill);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  })();
-}, [date]);
+    })();
+  }, [date]);
 
 
   // Totals
   const totalOpening = rows.reduce((s, it) => s + it.opening, 0);
   const totalToday = rows.reduce((s, it) => s + it.todaysAmount, 0);
-const totalPaid = Object.values(paidInputs)
-  .reduce<number>((s, v) => s + (v ?? 0), 0);
+  const totalPaid = Object.values(paidInputs)
+    .reduce<number>((s, v) => s + (v ?? 0), 0);
   const totalDiscount = Object.values(discountInputs)
-  .reduce<number>((s, v) => s + (v ?? 0), 0);
+    .reduce<number>((s, v) => s + (v ?? 0), 0);
 
-const handleSave = async () => {
-  try {
-    // Build items using id if present, else skip (because ar_ledger now requires customer_id)
-    const items = rows.map(r => {
-      const customerObj = typeof r.customer === 'object' && r.customer !== null
-        ? r.customer
-        : { id: null, name: String(r.customer) };
+  const handleSave = async () => {
+    try {
+      // Build items using id if present, else skip (because ar_ledger now requires customer_id)
+      const items = rows.map(r => {
+        const customerObj = typeof r.customer === 'object' && r.customer !== null
+          ? r.customer
+          : { id: null, name: String(r.customer) };
 
-      const key = String(customerObj.id ?? customerObj.name);
+        const key = String(customerObj.id ?? customerObj.name);
 
-      return {
-        customerId: customerObj.id ?? null,     // <-- send id when present (or null)
-        paid: Number(paidInputs[key] ?? 0),
-        discount: Number(discountInputs[key] ?? 0),
-      };
-    });
+        return {
+          customerId: customerObj.id ?? null,     // <-- send id when present (or null)
+          paid: Number(paidInputs[key] ?? 0),
+          discount: Number(discountInputs[key] ?? 0),
+        };
+      });
 
-    // You might want to filter out rows without customerId if the server now requires it:
-    const itemsToSend = items.filter(it => it.customerId !== null);
+      // You might want to filter out rows without customerId if the server now requires it:
+      const itemsToSend = items.filter(it => it.customerId !== null);
 
-    console.log(itemsToSend, "ledger input");
+      console.log(itemsToSend, "ledger input");
 
-    await saveLedgerCollection({ date, items: itemsToSend });
+      await saveLedgerCollection({ date, items: itemsToSend });
 
-    setSaveMessage("Data saved successfully!");
-    setTimeout(() => setSaveMessage(""), 2500);
-  } catch (e) {
-    console.error(e);
-    setSaveMessage("Save failed.");
-    setTimeout(() => setSaveMessage(""), 2500);
-  }
-};
+      setSaveMessage("Data saved successfully!");
+      setTimeout(() => setSaveMessage(""), 2500);
+    } catch (e) {
+      console.error(e);
+      setSaveMessage("Save failed.");
+      setTimeout(() => setSaveMessage(""), 2500);
+    }
+  };
 
 
   if (loading) {
@@ -157,83 +157,98 @@ const handleSave = async () => {
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Paid</th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Discount</th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Closing Balance</th>
               </tr>
             </thead>
 
             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
-  {rows.map((item, index) => {
-    const customerObj =
-      typeof item.customer === "object" && item.customer !== null
-        ? item.customer
-        : { id: null, name: String(item.customer) };
+              {rows.map((item, index) => {
+                const customerObj =
+                  typeof item.customer === "object" && item.customer !== null
+                    ? item.customer
+                    : { id: null, name: String(item.customer) };
 
-    const key = customerObj.id ?? customerObj.name;
+                const key = customerObj.id ?? customerObj.name;
 
-    return (
-      <tr key={customerObj.id ?? `c-${index}`}>
-        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
-          {customerObj.name}
-        </td>
+                return (
+                  <tr key={customerObj.id ?? `c-${index}`}>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                      {customerObj.name}
+                    </td>
 
-        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-          ₹{item.opening.toFixed(2)}
-        </td>
+                    <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      ₹{item.opening.toFixed(2)}
+                    </td>
 
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-          ₹{item.todaysAmount.toFixed(2)}
-        </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      ₹{item.todaysAmount.toFixed(2)}
+                    </td>
 
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
-          <div className="border border-gray-300 dark:border-gray-600 rounded p-1">
-            ₹{(item.opening + item.todaysAmount).toFixed(2)}
-          </div>
-        </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      <div className="border border-gray-300 dark:border-gray-600 rounded p-1">
+                        ₹{(item.opening + item.todaysAmount).toFixed(2)}
+                      </div>
+                    </td>
 
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 print:hidden">
-          <input
-            type="number"
-            className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance:textfield]"
-            value={paidInputs[key] ?? ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              const value = val === "" ? undefined : Math.max(0, Number(val) || 0);
-              setPaidInputs((prev) => ({ ...prev, [key]: value }));
-            }}
-            placeholder="Enter amount"
-            min={0}
-          />
-        </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 print:hidden">
+                      <input
+                        type="number"
+                        className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance:textfield]"
+                        value={paidInputs[key] ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const value = val === "" ? undefined : Math.max(0, Number(val) || 0);
+                          setPaidInputs((prev) => ({ ...prev, [key]: value }));
+                        }}
+                        placeholder="Enter amount"
+                        min={0}
+                      />
+                    </td>
 
-        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 print:hidden">
-          <input
-            type="number"
-            className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance:textfield]"
-            value={discountInputs[key] ?? ""}
-            onChange={(e) => {
-              const val = e.target.value;
-              const value = val === "" ? undefined : Math.max(0, Number(val) || 0);
-              setDiscountInputs((prev) => ({ ...prev, [key]: value }));
-            }}
-            placeholder="Enter amount"
-            min={0}
-          />
-        </td>
-      </tr>
-    );
-  })}
-</tbody>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300 print:hidden">
+                      <input
+                        type="number"
+                        className="w-32 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none [&::-moz-appearance:textfield]"
+                        value={discountInputs[key] ?? ""}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const value = val === "" ? undefined : Math.max(0, Number(val) || 0);
+                          setDiscountInputs((prev) => ({ ...prev, [key]: value }));
+                        }}
+                        placeholder="Enter amount"
+                        min={0}
+                      />
+                    </td>
+
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                      <div className="border border-gray-300 dark:border-gray-600 rounded p-1 font-semibold text-gray-900 dark:text-white">
+                        ₹{((item.opening + item.todaysAmount) - (Number(paidInputs[key] ?? 0) + Number(discountInputs[key] ?? 0))).toFixed(2)}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
 
             <tfoot className="bg-gray-50 dark:bg-gray-700">
-  <tr>
-    <td colSpan={4} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
-      Grand Total (Paid - Discount):
-    </td>
-    <td className="px-6 py-3 text-sm font-bold text-green-600 dark:text-green-400">
-      ₹{(totalPaid - totalDiscount).toFixed(2)}
-    </td>
-    <td className="print:hidden"></td>
-  </tr>
-</tfoot>
+              <tr>
+                <td colSpan={4} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                  Grand Total (Paid - Discount):
+                </td>
+                <td className="px-6 py-3 text-sm font-bold text-green-600 dark:text-green-400">
+                  ₹{(totalPaid - totalDiscount).toFixed(2)}
+                </td>
+                <td colSpan={2} className="print:hidden"></td>
+              </tr>
+              <tr>
+                <td colSpan={6} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                  Grand Total Closing Balance:
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-bold text-blue-600 dark:text-blue-400">
+                  ₹{(totalOpening + totalToday - (totalPaid + totalDiscount)).toFixed(2)}
+                </td>
+              </tr>
+            </tfoot>
 
           </table>
         </div>

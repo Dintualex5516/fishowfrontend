@@ -121,6 +121,26 @@ const EditModal: React.FC<EditModalProps> = ({
       setEditData({ ...entry, party: partyId, salesman: salesmanId, items: updatedItems });
     }
   }, [entry, parties, salesmenList, products, customers]);
+  const boxTypeTotals = React.useMemo(() => {
+  if (!editData) return [];
+
+  const map = new Map<string, number>();
+
+  editData.items.forEach(item => {
+    if (!item.box_type) return;
+
+    const boxCount = parseFloat(item.box) || 0;
+    map.set(item.box_type, (map.get(item.box_type) || 0) + boxCount);
+  });
+
+  return Array.from(map.entries()).map(([boxTypeId, total]) => {
+    const name =
+      parties.find(p => p.id === String(boxTypeId))?.name || boxTypeId;
+
+    return { name, total };
+  });
+}, [editData, parties]);
+
 
   if (!isOpen || !editData) return null;
 
@@ -156,24 +176,18 @@ const EditModal: React.FC<EditModalProps> = ({
       const currentItemIndex = editData?.items.findIndex(item => item.id === itemId) ?? -1;
       if (currentItemIndex === -1) return;
 
-      const fieldOrder = ['customer', 'item', 'box', 'price'];
-
       if (field === 'customer') {
-        // Move to item field in same row
+        // Move to box_type field in same row
         setTimeout(() => {
-          const nextInput = document.querySelector<HTMLInputElement>(
-            `[data-item-id="${itemId}"][data-field="item"] input`
+          const nextWrapper = document.querySelector<HTMLDivElement>(
+            `[data-item-id="${itemId}"][data-field="box_type"]`
           );
-          if (nextInput) {
-            nextInput.focus();
-          } else {
-            const fallbackInput = document.querySelector<HTMLInputElement>(
-              `input[data-item-id="${itemId}"][data-field="item"]`
-            );
-            fallbackInput?.focus();
+          if (nextWrapper) {
+            const input = nextWrapper.querySelector('input');
+            input?.focus();
           }
         }, 0);
-      } else if (field === 'item') {
+      } else if (field === 'box_type') {
         // Move to box field in same row
         setTimeout(() => {
           const nextInput = document.querySelector<HTMLInputElement>(
@@ -182,14 +196,6 @@ const EditModal: React.FC<EditModalProps> = ({
           nextInput?.focus();
         }, 0);
       } else if (field === 'box') {
-        // Move to price field in same row
-        setTimeout(() => {
-          const nextInput = document.querySelector<HTMLInputElement>(
-            `input[data-item-id="${itemId}"][data-field="price"]`
-          );
-          nextInput?.focus();
-        }, 0);
-      } else if (field === 'price') {
         // Check if there's a row above this one
         if (currentItemIndex > 0) {
           // Navigate to the row above (previous row's customer field)
@@ -206,7 +212,7 @@ const EditModal: React.FC<EditModalProps> = ({
             }, 0);
           }
         } else {
-          // No row above, create new row and focus on its customer field
+          // No row above (index 0), create new row and focus on its customer field
           const newItemId = addRow();
           if (newItemId) {
             setTimeout(() => {
@@ -271,6 +277,8 @@ const EditModal: React.FC<EditModalProps> = ({
       onClose();
     }
   };
+
+  
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -409,10 +417,10 @@ const EditModal: React.FC<EditModalProps> = ({
                         data-item-id={item.id}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter' && !e.defaultPrevented) {
-                            // Move to item field in same row only if dropdown is not open
+                            // Move to box_type field in same row only if dropdown is not open
                             setTimeout(() => {
                               const nextWrapper = document.querySelector<HTMLDivElement>(
-                                `[data-item-id="${item.id}"][data-field="item"]`
+                                `[data-item-id="${item.id}"][data-field="box_type"]`
                               );
                               if (nextWrapper) {
                                 const input = nextWrapper.querySelector('input');
@@ -420,13 +428,13 @@ const EditModal: React.FC<EditModalProps> = ({
                               }
                             }, 0);
                           } else {
-                            // For other keys, call the parent's handleKeyDown
+                            // Let handleKeyDown handle the case where dropdown might be closed (though Enter usually closes it)
                             handleKeyDown(e, item.id, 'customer');
                           }
                         }}
                       />
                     </td>
-                    
+
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
                       <SearchableInput
                         // value={
@@ -448,7 +456,19 @@ const EditModal: React.FC<EditModalProps> = ({
                         entityType="party"
                         data-field="box_type"
                         data-item-id={item.id}
-                        onKeyDown={(e) => handleKeyDown(e, item.id, "box_type")}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' && !e.defaultPrevented) {
+                            // Move to box field in same row
+                            setTimeout(() => {
+                              const nextInput = document.querySelector<HTMLInputElement>(
+                                `input[data-item-id="${item.id}"][data-field="box"]`
+                              );
+                              nextInput?.focus();
+                            }, 0);
+                          } else {
+                            handleKeyDown(e, item.id, "box_type");
+                          }
+                        }}
                       />
                     </td>
 
@@ -465,7 +485,7 @@ const EditModal: React.FC<EditModalProps> = ({
                         data-item-id={item.id}
                       />
                     </td>
-                    
+
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                       <button
                         onClick={() => removeRow(item.id)}
@@ -479,6 +499,32 @@ const EditModal: React.FC<EditModalProps> = ({
                   </tr>
                 ))}
               </tbody>
+              <tfoot>
+  <tr className="bg-gray-100 dark:bg-gray-700">
+    <td
+      colSpan={4}
+      className="border border-gray-300 dark:border-gray-600 px-4 py-3"
+    >
+      <div className="flex flex-wrap gap-4 text-sm font-semibold text-gray-900 dark:text-white">
+        {boxTypeTotals.length > 0 ? (
+          boxTypeTotals.map(bt => (
+            <span
+              key={bt.name}
+              className="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg"
+            >
+              {bt.name} – {bt.total}
+            </span>
+          ))
+        ) : (
+          <span className="text-gray-500 dark:text-gray-400">
+            No box types
+          </span>
+        )}
+      </div>
+    </td>
+  </tr>
+</tfoot>
+
             </table>
           </div>
         </div>
@@ -510,7 +556,7 @@ const BoxSalesList: React.FC = () => {
   const [loadingLookups, setLoadingLookups] = useState(false);
   // Generate load number string
   const getPartyName = (id?: string | null) =>
-  parties.find(p => p.id === String(id))?.name ?? "";
+    parties.find(p => p.id === String(id))?.name ?? "";
 
   const generateLoadNumberString = (num: number) => {
     const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
@@ -842,7 +888,7 @@ const BoxSalesList: React.FC = () => {
 
           {/* Summary Boxes - All in one line */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
-            
+
             <div className="text-center">
               <div className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Boxes Added</div>
               <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
@@ -1063,7 +1109,7 @@ const BoxSalesList: React.FC = () => {
                             {/* {item.box_type} */}
                             <td>
                               {/* {parties.find(p => p.id === String(item.box_type))?.name || ""} */}
-                            {getPartyName(item.box_type)}
+                              {getPartyName(item.box_type)}
 
                             </td>
 
