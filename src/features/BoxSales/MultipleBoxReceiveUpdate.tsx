@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminBoard from '../../components/AdminBoard';
@@ -78,7 +79,9 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
         };
       });
 
-      setItems(mapped);
+      // Sort alphabetically by customer name
+      const sorted = mapped.sort((a, b) => a.customer.localeCompare(b.customer));
+      setItems(sorted);
     } catch (err) {
       console.error('Error fetching box tracking', err);
       setNotification({ message: 'Error loading data. Please refresh the page.', type: 'error' });
@@ -143,11 +146,10 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
       {notification && (
         <div className="fixed top-4 right-4 z-50">
           <div
-            className={`px-4 py-3 rounded-lg shadow-lg border ${
-              notification.type === 'success'
+            className={`px-4 py-3 rounded-lg shadow-lg border ${notification.type === 'success'
                 ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
                 : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
-            }`}
+              }`}
           >
             <span className="font-medium">{notification.message}</span>
           </div>
@@ -236,13 +238,12 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
                     </td>
 
                     <td
-                      className={`border px-4 py-3 text-sm font-medium ${
-                        item.balance < 0
+                      className={`border px-4 py-3 text-sm font-medium ${item.balance < 0
                           ? 'text-red-600 dark:text-red-400'
                           : item.balance > 0
-                          ? 'text-green-600 dark:text-green-400'
-                          : 'text-gray-900 dark:text-white'
-                      }`}
+                            ? 'text-green-600 dark:text-green-400'
+                            : 'text-gray-900 dark:text-white'
+                        }`}
                     >
                       {item.balance}
                       {item.isModified && <span className="ml-2 text-xs text-blue-600">(modified)</span>}

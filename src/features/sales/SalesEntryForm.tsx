@@ -1,3 +1,4 @@
+
 import { Plus, Save, Trash2, Eye } from 'lucide-react';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -71,7 +72,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
             ×
           </button>
         </div>
-        
+
         <div className="p-6 space-y-6">
           {/* Header Information */}
           <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
@@ -182,7 +183,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
             </table>
           </div>
         </div>
-        
+
         <div className="flex justify-end p-6 border-t border-gray-200 dark:border-gray-600">
           <button
             onClick={onClose}
@@ -197,7 +198,7 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
 };
 
 // Try to resolve a value to an entity id (value might already be an id string or a name)
-function resolveEntityId(value: string | null | undefined, list: { id: string; name: string }[]) : string | null {
+function resolveEntityId(value: string | null | undefined, list: { id: string; name: string }[]): string | null {
   if (!value) return null;
   const asId = String(value).trim();
 
@@ -233,13 +234,13 @@ const SalesEntryForm: React.FC = () => {
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Validation error states - only show red borders after save attempt
-  const [validationErrors, setValidationErrors] = useState<{[key: string]: boolean}>({});
+  const [validationErrors, setValidationErrors] = useState<{ [key: string]: boolean }>({});
   const [hasAttemptedSave, setHasAttemptedSave] = useState(false);
 
   // Default values for new rows
-  // const [defaultCustomer, setDefaultCustomer] = useState('');
-  // const [defaultPrice, setDefaultPrice] = useState('');
-  // const [defaultItem, setDefaultItem] = useState('');
+  const [defaultCustomer, setDefaultCustomer] = useState('');
+  const [defaultPrice, setDefaultPrice] = useState('');
+  const [defaultItem, setDefaultItem] = useState('');
 
   // Initialize with current date in YYYY-MM-DD format
   const getCurrentDate = () => {
@@ -250,38 +251,38 @@ const SalesEntryForm: React.FC = () => {
     return `${year}-${month}-${day}`;
   };
 
-//   const mapItemsForServer = (items: SalesItem[]) => {
-//   return items
-//     .filter(it => it && (it.customer?.trim() || it.box || it.kg || it.price || it.item?.trim() || it.remark?.trim()))
-//     .map(it => ({
-//       customerName: it.customer || null,
-//       productName: it.item || null,
-//       box: it.box !== "" ? it.box : null,
-//       kg: it.kg !== "" ? it.kg : null,
-//       price: it.price !== "" ? it.price : null,
-//       total: it.total !== "" ? it.total : null,
-//       remark: it.remark || null,
-//     }));
-// };
-const mapItemsForServer = (items: SalesItem[]) => {
-  return items
-    .filter(it => it && (it.customer?.trim() || it.box || it.kg || it.price || it.item?.trim() || it.remark?.trim()))
-    .map(it => {
-      const customerId = resolveEntityId(it.customer, customers);
-      const productId  = resolveEntityId(it.item, products);
+  //   const mapItemsForServer = (items: SalesItem[]) => {
+  //   return items
+  //     .filter(it => it && (it.customer?.trim() || it.box || it.kg || it.price || it.item?.trim() || it.remark?.trim()))
+  //     .map(it => ({
+  //       customerName: it.customer || null,
+  //       productName: it.item || null,
+  //       box: it.box !== "" ? it.box : null,
+  //       kg: it.kg !== "" ? it.kg : null,
+  //       price: it.price !== "" ? it.price : null,
+  //       total: it.total !== "" ? it.total : null,
+  //       remark: it.remark || null,
+  //     }));
+  // };
+  const mapItemsForServer = (items: SalesItem[]) => {
+    return items
+      .filter(it => it && (it.customer?.trim() || it.box || it.kg || it.price || it.item?.trim() || it.remark?.trim()))
+      .map(it => {
+        const customerId = resolveEntityId(it.customer, customers);
+        const productId = resolveEntityId(it.item, products);
 
-      return {
-        // The backend expects these fields to be IDs (your backend code used customerName/productName as IDs)
-        customerName: customerId,      // string id or null
-        productName:  productId,       // string id or null
-        box: it.box !== "" ? it.box : null,
-        kg: it.kg !== "" ? it.kg : null,
-        price: it.price !== "" ? it.price : null,
-        total: it.total !== "" ? it.total : null,
-        remark: it.remark || null,
-      };
-    });
-};
+        return {
+          // The backend expects these fields to be IDs (your backend code used customerName/productName as IDs)
+          customerName: customerId,      // string id or null
+          productName: productId,       // string id or null
+          box: it.box !== "" ? it.box : null,
+          kg: it.kg !== "" ? it.kg : null,
+          price: it.price !== "" ? it.price : null,
+          total: it.total !== "" ? it.total : null,
+          remark: it.remark || null,
+        };
+      });
+  };
 
 
   const [date, setDate] = useState(getCurrentDate());
@@ -347,42 +348,42 @@ const mapItemsForServer = (items: SalesItem[]) => {
   }, [navigate]);
 
 
-useEffect(() => {
-  const fetchData = async () => {
-    try {
-      // Fetch a reasonably large first page for selects/autocomplete fallback
-      const pageSize = 200;
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch a reasonably large first page for selects/autocomplete fallback
+        const pageSize = 200;
 
-      const [custResp, partyResp, salesResp, prodResp] = await Promise.all([
-        listEntities('customers', { page: 1, pageSize }),
-        listEntities('parties',   { page: 1, pageSize }),
-        listEntities('salesmen',  { page: 1, pageSize }),
-        listEntities('products',  { page: 1, pageSize }),
-      ]);
+        const [custResp, partyResp, salesResp, prodResp] = await Promise.all([
+          listEntities('customers', { page: 1, pageSize }),
+          listEntities('parties', { page: 1, pageSize }),
+          listEntities('salesmen', { page: 1, pageSize }),
+          listEntities('products', { page: 1, pageSize }),
+        ]);
 
-      // listEntities returns { data, totalCount, page, pageSize }
-     if (custResp && Array.isArray(custResp.data)) {
-  setCustomers(custResp.data.map(e => ({ ...e, id: String(e.id) })));
-}
-if (partyResp && Array.isArray(partyResp.data)) {
-  setParties(partyResp.data.map(e => ({ ...e, id: String(e.id) })));
-}
-if (salesResp && Array.isArray(salesResp.data)) {
-  setSalesmenList(salesResp.data.map(e => ({ ...e, id: String(e.id) })));
-}
-if (prodResp && Array.isArray(prodResp.data)) {
-  setProducts(prodResp.data.map(e => ({ ...e, id: String(e.id) })));
-}
+        // listEntities returns { data, totalCount, page, pageSize }
+        if (custResp && Array.isArray(custResp.data)) {
+          setCustomers(custResp.data.map(e => ({ ...e, id: String(e.id) })));
+        }
+        if (partyResp && Array.isArray(partyResp.data)) {
+          setParties(partyResp.data.map(e => ({ ...e, id: String(e.id) })));
+        }
+        if (salesResp && Array.isArray(salesResp.data)) {
+          setSalesmenList(salesResp.data.map(e => ({ ...e, id: String(e.id) })));
+        }
+        if (prodResp && Array.isArray(prodResp.data)) {
+          setProducts(prodResp.data.map(e => ({ ...e, id: String(e.id) })));
+        }
 
-    } catch (err) {
-      console.error('Error loading entity lists', err);
-      // Optional: show notification
-      setNotification({ message: 'Failed loading lookup data', type: 'error' });
-    }
-  };
+      } catch (err) {
+        console.error('Error loading entity lists', err);
+        // Optional: show notification
+        setNotification({ message: 'Failed loading lookup data', type: 'error' });
+      }
+    };
 
-  fetchData();
-}, []);
+    fetchData();
+  }, []);
   // Load header values on component mount
   useEffect(() => {
     loadHeaderValues();
@@ -424,9 +425,9 @@ if (prodResp && Array.isArray(prodResp.data)) {
       customer: '',
       box: '',
       kg: '',
-      price: '',
+      price: defaultPrice,
       total: '',
-      item: '',
+      item: defaultItem,
       remark: '',
     };
     setItems([newItem, ...items]);
@@ -446,16 +447,16 @@ if (prodResp && Array.isArray(prodResp.data)) {
           if (item.id === id) {
             const updatedItem = { ...item, [field]: value };
 
-            // Update defaults when customer, price, or item is changed
-            // if (field === 'customer') {
-            //   setDefaultCustomer(value);
-            // }
-            // if (field === 'price') {
-            //   setDefaultPrice(value);
-            // }
-            // if (field === 'item') {
-            //   setDefaultItem(value);
-            // }
+            // Update defaults when customer, price or item is changed
+            if (field === 'customer') {
+              setDefaultCustomer(value);
+            }
+            if (field === 'price') {
+              setDefaultPrice(value);
+            }
+            if (field === 'item') {
+              setDefaultItem(value);
+            }
 
             // Auto-calculate total when box, kg, or price changes
             if (field === 'box' || field === 'kg' || field === 'price') {
@@ -534,70 +535,84 @@ if (prodResp && Array.isArray(prodResp.data)) {
   const totalBoxesValue = calculateTotalBoxes();
 
 
-// Replace your current fetchAndLoadLastEntry useCallback with this:
-const fetchAndLoadLastEntry = useCallback(async () => {
-  // require header fields
-  if (!date || !party || !salesman || !manualTotalBox ||
+  // Replace your current fetchAndLoadLastEntry useCallback with this:
+  const fetchAndLoadLastEntry = useCallback(async () => {
+    // require header fields
+    if (!date || !party || !salesman || !manualTotalBox ||
       party.trim() === "" || salesman.trim() === "" || manualTotalBox.trim() === "") {
-    setEntryNumber("");
-    const newItem: SalesItem = {
-      id: crypto.randomUUID(),
-      customer: "",
-      box: "",
-      kg: "",
-      price: "",
-      total: "",
-      item: "",
-      remark: "",
-    };
-    setItems([newItem]);
-    return;
-  }
+      setEntryNumber("");
+      const newItem: SalesItem = {
+        id: crypto.randomUUID(),
+        customer: "",
+        box: "",
+        kg: "",
+        price: "",
+        total: "",
+        item: "",
+        remark: "",
+      };
+      setItems([newItem]);
+      return;
+    }
 
-  try {
-    const resp = await getLatestEntry({
-      date,
-      partyName: party,
-      salesmanName: salesman,
-      totalBox: manualTotalBox,
-    });
+    try {
+      const resp = await getLatestEntry({
+        date,
+        partyName: party,
+        salesmanName: salesman,
+        totalBox: manualTotalBox,
+      });
 
-    console.log(resp);
-    
+      console.log(resp);
 
-    if (resp && resp.sale) {
-      const lastEntry = resp.sale;
-      setEntryNumber(String(lastEntry.entry_number || 1));
-      setCurrentEntryId(lastEntry.id || null);
 
-      if (Array.isArray(resp.items) && resp.items.length > 0) {
-        setItems(resp.items.map((it: any, idx: number) => ({
-          id: it.id ? String(it.id) : `${idx + 1}`,
-          customer: it.customer_name || "",
-          box: it.box != null ? String(it.box) : "",
-          kg: it.kg != null ? String(it.kg) : "",
-          price: it.price != null ? String(it.price) : "",
-          total: it.total != null ? String(it.total) : "",
-          item: it.product_name || "",
-          remark: it.remark || "",
-        })));
-        setNotification({ message: `Loaded entry ${lastEntry.entry_number}`, type: "success" });
+      if (resp && resp.sale) {
+        const lastEntry = resp.sale;
+        setEntryNumber(String(lastEntry.entry_number || 1));
+        setCurrentEntryId(lastEntry.id || null);
 
-        // Add one empty row at top (use defaults but DO NOT include them as deps)
-        setTimeout(() => {
-          const newItem: SalesItem = {
+        if (Array.isArray(resp.items) && resp.items.length > 0) {
+          setItems(resp.items.map((it: any, idx: number) => ({
+            id: it.id ? String(it.id) : `${idx + 1}`,
+            customer: it.customer_name || "",
+            box: it.box != null ? String(it.box) : "",
+            kg: it.kg != null ? String(it.kg) : "",
+            price: it.price != null ? String(it.price) : "",
+            total: it.total != null ? String(it.total) : "",
+            item: it.product_name || "",
+            remark: it.remark || "",
+          })));
+          setNotification({ message: `Loaded entry ${lastEntry.entry_number}`, type: "success" });
+
+          // Add one empty row at top (use defaults but DO NOT include them as deps)
+          setTimeout(() => {
+            const newItem: SalesItem = {
+              id: crypto.randomUUID(),
+              customer: "",
+              box: "",
+              kg: "",
+              price: defaultPrice,
+              total: "",
+              item: defaultItem,
+              remark: "",
+            };
+            setItems(prev => [newItem, ...prev]);
+          }, 100);
+        } else {
+          setItems([{
             id: crypto.randomUUID(),
-            customer: '',
+            customer: "",
             box: "",
             kg: "",
-            price: '',
+            price: "",
             total: "",
-            item: '',
+            item: "",
             remark: "",
-          };
-          setItems(prev => [newItem, ...prev]);
-        }, 100);
+          }]);
+        }
       } else {
+        setEntryNumber("1");
+        setCurrentEntryId(null);
         setItems([{
           id: crypto.randomUUID(),
           customer: "",
@@ -609,7 +624,8 @@ const fetchAndLoadLastEntry = useCallback(async () => {
           remark: "",
         }]);
       }
-    } else {
+    } catch (err: any) {
+      console.error("fetchAndLoadLastEntry error", err);
       setEntryNumber("1");
       setCurrentEntryId(null);
       setItems([{
@@ -623,77 +639,77 @@ const fetchAndLoadLastEntry = useCallback(async () => {
         remark: "",
       }]);
     }
-  } catch (err: any) {
-    console.error("fetchAndLoadLastEntry error", err);
-    setEntryNumber("1");
-    setCurrentEntryId(null);
-    setItems([{
-      id: crypto.randomUUID(),
-      customer: "",
-      box: "",
-      kg: "",
-      price: "",
-      total: "",
-      item: "",
-      remark: "",
-    }]);
-  }
-}, [date, party, salesman, manualTotalBox]); // <- IMPORTANT: no defaultCustomer/defaultPrice/defaultItem here
+  }, [date, party, salesman, manualTotalBox]); // <- IMPORTANT: no defaultCustomer/defaultPrice/defaultItem here
 
 
-// Replace current loadEntryData useCallback with this:
-const loadEntryData = useCallback(async (entryNum: string) => {
-  if (!date || !party || !salesman || !manualTotalBox || !entryNum) {
-    setItems([{
-      id: crypto.randomUUID(),
-      customer: "",
-      box: "",
-      kg: "",
-      price: "",
-      total: "",
-      item: "",
-      remark: "",
-    }]);
-    return;
-  }
+  // Replace current loadEntryData useCallback with this:
+  const loadEntryData = useCallback(async (entryNum: string) => {
+    if (!date || !party || !salesman || !manualTotalBox || !entryNum) {
+      setItems([{
+        id: crypto.randomUUID(),
+        customer: "",
+        box: "",
+        kg: "",
+        price: "",
+        total: "",
+        item: "",
+        remark: "",
+      }]);
+      return;
+    }
 
-  try {
-    const resp = await getSaleByEntry({
-      date,
-      partyName: party,
-      salesmanName: salesman,
-      totalBox: manualTotalBox,
-      entryNumber: entryNum,
-    });
+    try {
+      const resp = await getSaleByEntry({
+        date,
+        partyName: party,
+        salesmanName: salesman,
+        totalBox: manualTotalBox,
+        entryNumber: entryNum,
+      });
 
-    if (resp && resp.sale) {
-      setCurrentEntryId(resp.sale.id || null);
-      setItems(resp.items.map((it: any, idx: number) => ({
-        id: it.id ? String(it.id) : `${idx + 1}`,
-        customer: it.customer_name || "",
-        box: it.box != null ? String(it.box) : "",
-        kg: it.kg != null ? String(it.kg) : "",
-        price: it.price != null ? String(it.price) : "",
-        total: it.total != null ? String(it.total) : "",
-        item: it.product_name || "",
-        remark: it.remark || "",
-      })));
-      setNotification({ message: `Loaded entry ${entryNum}`, type: "success" });
+      if (resp && resp.sale) {
+        setCurrentEntryId(resp.sale.id || null);
+        setItems(resp.items.map((it: any, idx: number) => ({
+          id: it.id ? String(it.id) : `${idx + 1}`,
+          customer: it.customer_name || "",
+          box: it.box != null ? String(it.box) : "",
+          kg: it.kg != null ? String(it.kg) : "",
+          price: it.price != null ? String(it.price) : "",
+          total: it.total != null ? String(it.total) : "",
+          item: it.product_name || "",
+          remark: it.remark || "",
+        })));
+        setNotification({ message: `Loaded entry ${entryNum}`, type: "success" });
 
-      setTimeout(() => {
-        const newItem: SalesItem = {
+        setTimeout(() => {
+          const newItem: SalesItem = {
+            id: crypto.randomUUID(),
+            customer: "",
+            box: "",
+            kg: "",
+            price: defaultPrice,
+            total: "",
+            item: defaultItem,
+            remark: "",
+          };
+          setItems(prev => [newItem, ...prev]);
+        }, 100);
+      } else {
+        setCurrentEntryId(null);
+        setItems([{
           id: crypto.randomUUID(),
-          customer: '',
+          customer: "",
           box: "",
           kg: "",
-          price: '',
+          price: "",
           total: "",
-          item: '',
+          item: "",
           remark: "",
-        };
-        setItems(prev => [newItem, ...prev]);
-      }, 100);
-    } else {
+        }]);
+        console.log("No existing entry found for entry number, cleared items");
+      }
+    } catch (err: any) {
+      console.error("loadEntryData error", err);
       setCurrentEntryId(null);
       setItems([{
         id: crypto.randomUUID(),
@@ -705,23 +721,8 @@ const loadEntryData = useCallback(async (entryNum: string) => {
         item: "",
         remark: "",
       }]);
-      console.log("No existing entry found for entry number, cleared items");
     }
-  } catch (err: any) {
-    console.error("loadEntryData error", err);
-    setCurrentEntryId(null);
-    setItems([{
-      id: crypto.randomUUID(),
-      customer: "",
-      box: "",
-      kg: "",
-      price: "",
-      total: "",
-      item: "",
-      remark: "",
-    }]);
-  }
-}, [date, party, salesman, manualTotalBox]); // <- IMPORTANT: no defaults here either
+  }, [date, party, salesman, manualTotalBox]); // <- IMPORTANT: no defaults here either
 
 
 
@@ -731,7 +732,7 @@ const loadEntryData = useCallback(async (entryNum: string) => {
 
     // Only fetch if we have all required fields filled and they are not empty strings
     if (date && party && salesman && manualTotalBox &&
-        party.trim() !== '' && salesman.trim() !== '' && manualTotalBox.trim() !== '') {
+      party.trim() !== '' && salesman.trim() !== '' && manualTotalBox.trim() !== '') {
       console.log('🔄 All fields filled, calling fetchAndLoadLastEntry');
       fetchAndLoadLastEntry();
     } else {
@@ -951,9 +952,9 @@ const loadEntryData = useCallback(async (entryNum: string) => {
   // Autosave effect - save immediately when any field is filled
   useEffect(() => {
     const hasAnyFilledField = party?.trim() ||
-                              salesman?.trim() ||
-                              manualTotalBox?.trim() ||
-                              items.some(item => item.customer?.trim() || item.box || item.kg || item.price || item.item?.trim() || item.remark?.trim());
+      salesman?.trim() ||
+      manualTotalBox?.trim() ||
+      items.some(item => item.customer?.trim() || item.box || item.kg || item.price || item.item?.trim() || item.remark?.trim());
 
     console.log('Autosave effect check:', {
       hasAnyFilledField,
@@ -985,11 +986,11 @@ const loadEntryData = useCallback(async (entryNum: string) => {
 
           // Only load draft if it has meaningful data (not empty post-save state)
           const hasMeaningfulData = parsedData.party?.trim() ||
-                                  parsedData.salesman?.trim() ||
-                                  parsedData.totalBox?.trim() ||
-                                  (parsedData.items && parsedData.items.some((item: any) =>
-                                    item.customer?.trim() || item.box || item.kg || item.price || item.item?.trim() || item.remark?.trim()
-                                  ));
+            parsedData.salesman?.trim() ||
+            parsedData.totalBox?.trim() ||
+            (parsedData.items && parsedData.items.some((item: any) =>
+              item.customer?.trim() || item.box || item.kg || item.price || item.item?.trim() || item.remark?.trim()
+            ));
 
           if (hasMeaningfulData) {
             setDate(parsedData.date || getCurrentDate());
@@ -1000,9 +1001,9 @@ const loadEntryData = useCallback(async (entryNum: string) => {
             setItems(parsedData.items || items);
             // Set defaults from first item if available
             if (parsedData.items && parsedData.items.length > 0) {
-              // setDefaultCustomer(parsedData.items[0].customer || '');
-              // setDefaultPrice(parsedData.items[0].price || '');
-              // setDefaultItem(parsedData.items[0].item || '');
+              setDefaultCustomer(parsedData.items[0].customer || '');
+              setDefaultPrice(parsedData.items[0].price || '');
+              setDefaultItem(parsedData.items[0].item || '');
             }
             setLastAutosave(new Date(parsedData.lastAutosave));
             setAutosaveStatus('idle');
@@ -1022,115 +1023,115 @@ const loadEntryData = useCallback(async (entryNum: string) => {
   }, []);
 
   const handleSave = async () => {
-  console.log("💾 Save button clicked with data:", {
-    date,
-    party,
-    salesman,
-    manualTotalBox,
-    entryNumber,
-    itemsCount: items.length,
-  });
-
-  setHasAttemptedSave(true);
-
-  // Validation (same as before)
-  const fieldErrors: { [key: string]: boolean } = {};
-  if (!party?.trim()) fieldErrors["party"] = true;
-  if (!salesman?.trim()) fieldErrors["salesman"] = true;
-  if (!manualTotalBox?.trim()) fieldErrors["totalBox"] = true;
-  if (!items || items.length === 0) fieldErrors["items"] = true;
-  else {
-    items.forEach((item, index) => {
-      if (!item.customer?.trim()) fieldErrors[`item-${index}-customer`] = true;
-      const hasBox = item.box && item.box.trim() !== "";
-      const hasKg = item.kg && item.kg.trim() !== "";
-      if (!hasBox && !hasKg) fieldErrors[`item-${index}-boxorkg`] = true;
-      if (!item.price || item.price.trim() === "") fieldErrors[`item-${index}-price`] = true;
+    console.log("💾 Save button clicked with data:", {
+      date,
+      party,
+      salesman,
+      manualTotalBox,
+      entryNumber,
+      itemsCount: items.length,
     });
-  }
 
-  setValidationErrors(fieldErrors);
+    setHasAttemptedSave(true);
 
-  if (Object.keys(fieldErrors).length > 0) {
-    setNotification({ message: "Please enter all mandatory fields", type: "error" });
-    return;
-  }
-
-  // Prepare payload
-  const payload = {
-    date,
-    partyName: party,
-    salesmanName: salesman,
-    totalBox: manualTotalBox != null ? Number(manualTotalBox) : 0,
-    entryNumber: entryNumber ? Number(entryNumber) : 1,
-    totalAmount: calculateTotal(),
-    items: mapItemsForServer(items),
-  };
-
-  try {
-    console.log("Starting save operation with payload:", payload);
-
-    if (currentEntryId) {
-      // update existing
-      await updateSale(currentEntryId, payload);
-      setNotification({ message: `Sales entry ${entryNumber} updated successfully!`, type: "success" });
-    } else {
-      // create new
-      const resp = await createSale(payload);
-      // resp should contain id and possibly load number string
-      const newId = resp?.id;
-      setCurrentEntryId(newId || null);
-      // Ensure entryNumber is set (server uses provided entryNumber; your router returns load_number_str only)
-      setEntryNumber(String(payload.entryNumber || 1));
-      setNotification({ message: `Sales entry ${payload.entryNumber} saved successfully!`, type: "success" });
+    // Validation (same as before)
+    const fieldErrors: { [key: string]: boolean } = {};
+    if (!party?.trim()) fieldErrors["party"] = true;
+    if (!salesman?.trim()) fieldErrors["salesman"] = true;
+    if (!manualTotalBox?.trim()) fieldErrors["totalBox"] = true;
+    if (!items || items.length === 0) fieldErrors["items"] = true;
+    else {
+      items.forEach((item, index) => {
+        if (!item.customer?.trim()) fieldErrors[`item-${index}-customer`] = true;
+        const hasBox = item.box && item.box.trim() !== "";
+        const hasKg = item.kg && item.kg.trim() !== "";
+        if (!hasBox && !hasKg) fieldErrors[`item-${index}-boxorkg`] = true;
+        if (!item.price || item.price.trim() === "") fieldErrors[`item-${index}-price`] = true;
+      });
     }
 
-    // Clear validation and reset form similar to your previous behaviour
-    setValidationErrors({});
-    setHasAttemptedSave(false);
+    setValidationErrors(fieldErrors);
 
-    // Reset date to today
-    setDate(getCurrentDate());
-    setParty("");
-    setSalesman("");
-    setManualTotalBox("");
-    // setDefaultCustomer("");
-    // setDefaultPrice("");
-    // setDefaultItem("");
+    if (Object.keys(fieldErrors).length > 0) {
+      setNotification({ message: "Please enter all mandatory fields", type: "error" });
+      return;
+    }
 
-    const newItem: SalesItem = {
-      id: crypto.randomUUID(),
-      customer: "",
-      box: "",
-      kg: "",
-      price: "",
-      total: "",
-      item: "",
-      remark: "",
+    // Prepare payload
+    const payload = {
+      date,
+      partyName: party,
+      salesmanName: salesman,
+      totalBox: manualTotalBox != null ? Number(manualTotalBox) : 0,
+      entryNumber: entryNumber ? Number(entryNumber) : 1,
+      totalAmount: calculateTotal(),
+      items: mapItemsForServer(items),
     };
-    setItems([newItem]);
 
-    // Clear autosave data
-    setCurrentDraftId(null);
-    setCurrentEntryId(null);
-    setAutosaveStatus("idle");
-    setLastAutosave(null);
-    localStorage.removeItem("salesFormDraft");
-    localStorage.removeItem("salesFormHeaderValues");
-  } catch (err: any) {
-    console.error("Save operation failed:", err);
+    try {
+      console.log("Starting save operation with payload:", payload);
 
-    // Handle common API errors
-    const status = err?.response?.status;
-    const data = err?.response?.data;
-    if (status === 409) {
-      setNotification({ message: data?.message || "Duplicate entry", type: "error" });
-    } else {
-      const msg = (data && data.message) ? data.message : (err.message || "Failed to save");
-      setNotification({ message: `Error saving sales entry: ${msg}`, type: "error" });
+      if (currentEntryId) {
+        // update existing
+        await updateSale(currentEntryId, payload);
+        setNotification({ message: `Sales entry ${entryNumber} updated successfully!`, type: "success" });
+      } else {
+        // create new
+        const resp = await createSale(payload);
+        // resp should contain id and possibly load number string
+        const newId = resp?.id;
+        setCurrentEntryId(newId || null);
+        // Ensure entryNumber is set (server uses provided entryNumber; your router returns load_number_str only)
+        setEntryNumber(String(payload.entryNumber || 1));
+        setNotification({ message: `Sales entry ${payload.entryNumber} saved successfully!`, type: "success" });
+      }
+
+      // Clear validation and reset form similar to your previous behaviour
+      setValidationErrors({});
+      setHasAttemptedSave(false);
+
+      // Reset date to today
+      setDate(getCurrentDate());
+      setParty("");
+      setSalesman("");
+      setManualTotalBox("");
+      setDefaultCustomer("");
+      setDefaultPrice("");
+      setDefaultItem("");
+
+      const newItem: SalesItem = {
+        id: crypto.randomUUID(),
+        customer: "",
+        box: "",
+        kg: "",
+        price: "",
+        total: "",
+        item: "",
+        remark: "",
+      };
+      setItems([newItem]);
+
+      // Clear autosave data
+      setCurrentDraftId(null);
+      setCurrentEntryId(null);
+      setAutosaveStatus("idle");
+      setLastAutosave(null);
+      localStorage.removeItem("salesFormDraft");
+      localStorage.removeItem("salesFormHeaderValues");
+    } catch (err: any) {
+      console.error("Save operation failed:", err);
+
+      // Handle common API errors
+      const status = err?.response?.status;
+      const data = err?.response?.data;
+      if (status === 409) {
+        setNotification({ message: data?.message || "Duplicate entry", type: "error" });
+      } else {
+        const msg = (data && data.message) ? data.message : (err.message || "Failed to save");
+        setNotification({ message: `Error saving sales entry: ${msg}`, type: "error" });
+      }
     }
-  }
-};
+  };
 
 
   // Auto-hide notification after 3 seconds
@@ -1151,11 +1152,10 @@ const loadEntryData = useCallback(async (entryNum: string) => {
         {/* Notification Toast */}
         {notification && (
           <div className="fixed top-4 right-4 z-50">
-            <div className={`px-4 py-3 rounded-lg shadow-lg border ${
-              notification.type === 'success'
-                ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
-                : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
-            }`}>
+            <div className={`px-4 py-3 rounded-lg shadow-lg border ${notification.type === 'success'
+              ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
+              : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
+              }`}>
               <div className="flex items-center space-x-2">
                 {notification.type === 'success' ? (
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -1210,11 +1210,10 @@ const loadEntryData = useCallback(async (entryNum: string) => {
                     onChange={(e) => setDate(e.target.value)}
                     onKeyDown={handleHeaderKeyDown}
                     data-field="date"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                      hasAttemptedSave && validationErrors['party']
-                        ? 'border-red-500 dark:border-red-400'
-                        : 'border-gray-300 dark:border-gray-600'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${hasAttemptedSave && validationErrors['party']
+                      ? 'border-red-500 dark:border-red-400'
+                      : 'border-gray-300 dark:border-gray-600'
+                      }`}
                   />
                 </div>
                 <div>
@@ -1245,11 +1244,10 @@ const loadEntryData = useCallback(async (entryNum: string) => {
                     onChange={(e) => setManualTotalBox(e.target.value)}
                     onKeyDown={handleHeaderKeyDown}
                     data-field="totalBox"
-                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                      hasAttemptedSave && validationErrors['totalBox']
-                        ? 'border-red-500 dark:border-red-400'
-                        : 'border-gray-300 dark:border-gray-600'
-                    }`}
+                    className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${hasAttemptedSave && validationErrors['totalBox']
+                      ? 'border-red-500 dark:border-red-400'
+                      : 'border-gray-300 dark:border-gray-600'
+                      }`}
                     placeholder="0"
                   />
                 </div>
@@ -1283,11 +1281,10 @@ const loadEntryData = useCallback(async (entryNum: string) => {
                       onKeyDown={handleHeaderKeyDown}
                       data-field="entryNumber"
                       disabled={!date || !party || !salesman || !manualTotalBox}
-                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${
-                        (!date || !party || !salesman || !manualTotalBox)
-                          ? 'border-gray-200 dark:border-gray-500 bg-gray-50 dark:bg-gray-600 text-gray-400 dark:text-gray-500'
-                          : 'border-gray-300 dark:border-gray-600'
-                      }`}
+                      className={`w-full px-3 py-2 pr-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white ${(!date || !party || !salesman || !manualTotalBox)
+                        ? 'border-gray-200 dark:border-gray-500 bg-gray-50 dark:bg-gray-600 text-gray-400 dark:text-gray-500'
+                        : 'border-gray-300 dark:border-gray-600'
+                        }`}
                       placeholder="0"
                     />
                     <button
@@ -1384,11 +1381,10 @@ const loadEntryData = useCallback(async (entryNum: string) => {
                             onKeyDown={(e) => handleKeyDown(e, item.id)}
                             createRoute="/create-customer"
                             entityType="customer"
-                            className={`w-full ${
-                              hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-customer`]
-                                ? 'border-red-500 dark:border-red-400'
-                                : ''
-                            }`}
+                            className={`w-full ${hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-customer`]
+                              ? 'border-red-500 dark:border-red-400'
+                              : ''
+                              }`}
                             data-field="customer"
                             data-item-id={item.id}
                           />
@@ -1404,11 +1400,10 @@ const loadEntryData = useCallback(async (entryNum: string) => {
                             onKeyDown={(e) => handleKeyDown(e, item.id)}
                             data-item-id={item.id}
                             data-field="box"
-                            className={`w-full px-2 py-1 border-none focus:ring-2 focus:ring-blue-500 focus:outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                              hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-boxorkg`]
-                                ? 'border-red-500 dark:border-red-400 rounded'
-                                : ''
-                            }`}
+                            className={`w-full px-2 py-1 border-none focus:ring-2 focus:ring-blue-500 focus:outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-boxorkg`]
+                              ? 'border-red-500 dark:border-red-400 rounded'
+                              : ''
+                              }`}
                             placeholder="0"
                           />
                         </td>
@@ -1423,11 +1418,10 @@ const loadEntryData = useCallback(async (entryNum: string) => {
                             onKeyDown={(e) => handleKeyDown(e, item.id)}
                             data-item-id={item.id}
                             data-field="kg"
-                            className={`w-full px-2 py-1 border-none focus:ring-2 focus:ring-blue-500 focus:outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                              hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-boxorkg`]
-                                ? 'border-red-500 dark:border-red-400 rounded'
-                                : ''
-                            }`}
+                            className={`w-full px-2 py-1 border-none focus:ring-2 focus:ring-blue-500 focus:outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-boxorkg`]
+                              ? 'border-red-500 dark:border-red-400 rounded'
+                              : ''
+                              }`}
                             placeholder="0.00"
                           />
                         </td>
@@ -1442,11 +1436,10 @@ const loadEntryData = useCallback(async (entryNum: string) => {
                             onKeyDown={(e) => handleKeyDown(e, item.id)}
                             data-item-id={item.id}
                             data-field="price"
-                            className={`w-full px-2 py-1 border-none focus:ring-2 focus:ring-blue-500 focus:outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${
-                              hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-price`]
-                                ? 'border-red-500 dark:border-red-400 rounded'
-                                : ''
-                            }`}
+                            className={`w-full px-2 py-1 border-none focus:ring-2 focus:ring-blue-500 focus:outline-none bg-transparent text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 ${hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-price`]
+                              ? 'border-red-500 dark:border-red-400 rounded'
+                              : ''
+                              }`}
                             placeholder="0.00"
                           />
                         </td>
@@ -1469,11 +1462,10 @@ const loadEntryData = useCallback(async (entryNum: string) => {
                             onKeyDown={(e) => handleKeyDown(e, item.id)}
                             createRoute="/create-item"
                             entityType="item"
-                            className={`w-full ${
-                              hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-price`]
-                                ? 'border-red-500 dark:border-red-400'
-                                : ''
-                            }`}
+                            className={`w-full ${hasAttemptedSave && validationErrors[`item-${items.indexOf(item)}-price`]
+                              ? 'border-red-500 dark:border-red-400'
+                              : ''
+                              }`}
                             data-field="item"
                             data-item-id={item.id}
                           />
@@ -1536,8 +1528,8 @@ const loadEntryData = useCallback(async (entryNum: string) => {
                 <span>Save Entry</span>
               </button>
             </div>
-            
-            
+
+
           </div>
         </div>
       </div>
