@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { getDailyBoxSummary, BoxSummaryRow } from "../../lib/box";
+import { getDailyBoxSummary, BoxSummaryRow, getDailyBoxSummaryCustomers } from "../../lib/box";
 
 interface DailySummaryBoxProps {
   date: string;
@@ -9,6 +9,10 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
   const [data, setData] = useState<BoxSummaryRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [totalBalance, setTotalBalance] = useState(0);
+  const [expandedPartyId, setExpandedPartyId] = useState<number | null>(null);
+const [customers, setCustomers] = useState<any[]>([]);
+const [customerLoading, setCustomerLoading] = useState(false);
+
 
   useEffect(() => {
     if (date) fetchData();
@@ -28,6 +32,21 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
       setLoading(false);
     }
   };
+
+  const fetchCustomers = async (partyId: number) => {
+  setCustomerLoading(true);
+  try {
+    const res = await getDailyBoxSummaryCustomers(date, partyId);
+    setCustomers(res.rows || []);
+    setExpandedPartyId(partyId);
+  } catch (e) {
+    console.error(e);
+    setCustomers([]);
+  } finally {
+    setCustomerLoading(false);
+  }
+};
+
 
   const handlePrint = () => {
     const printContents = document.getElementById("printable-area")?.innerHTML;
@@ -80,11 +99,11 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
                 Party
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
-                Balance (Total Box − Boxes Sold)
+                Box Sold(cash sale+box sale)
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+          {/* <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
             {data.map((row, idx) => (
               <tr key={idx}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
@@ -95,7 +114,54 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
                 </td>
               </tr>
             ))}
-          </tbody>
+          </tbody> */}
+
+          <tbody>
+  {data.map((row, idx) => (
+    <React.Fragment key={idx}>
+      <tr>
+        <td className="px-6 py-4 font-medium">{row.party}</td>
+        <td className="px-6 py-4">{row.balance}</td>
+        <td className="px-6 py-4">
+          <button
+            onClick={() => fetchCustomers(row.partyId)}
+            className="text-blue-600 text-sm underline"
+          >
+            View Customers
+          </button>
+        </td>
+      </tr>
+
+      {expandedPartyId === row.partyId && (
+        <tr>
+          <td colSpan={3} className="bg-gray-50 p-4">
+            {customerLoading ? (
+              <div>Loading...</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <th className="text-left">Customer</th>
+                    <th className="text-left">Boxes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customers.map((c, i) => (
+                    <tr key={i}>
+                      <td>{c.customer}</td>
+                      <td>{c.boxes}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  ))}
+</tbody>
+
           <tfoot className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">

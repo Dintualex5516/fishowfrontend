@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { getTotalBoxBalance, PartyBoxBalance } from "../../lib/box";
+import { getTotalBoxBalance, getTotalBoxBalanceCustomers, PartyBoxBalance, TotalBoxBalanceCustomerRow } from "../../lib/box";
 
 interface BoxBalanceData {
+  partyId: number;
   party: string;
   totalBalance: number | "_";
 }
@@ -11,6 +12,28 @@ const TotalBoxBalance: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [grandTotal, setGrandTotal] = useState(0);
+
+  const [expandedPartyId, setExpandedPartyId] = useState<number | null>(null);
+const [customers, setCustomers] = useState<TotalBoxBalanceCustomerRow[]>([]);
+const [customerLoading, setCustomerLoading] = useState(false);
+
+const fetchCustomers = async (partyId: number) => {
+  if (expandedPartyId === partyId) {
+    setExpandedPartyId(null);
+    return;
+  }
+
+  setCustomerLoading(true);
+  try {
+    const res = await getTotalBoxBalanceCustomers(partyId);
+    setCustomers(res.rows || []);
+    setExpandedPartyId(partyId);
+  } finally {
+    setCustomerLoading(false);
+  }
+};
+
+
 
   useEffect(() => {
     fetchBoxBalanceData();
@@ -27,6 +50,7 @@ const TotalBoxBalance: React.FC = () => {
     try {
       const res = await getTotalBoxBalance();
       const mapped: BoxBalanceData[] = (res.rows || []).map((r: PartyBoxBalance) => ({
+        partyId: r.partyId, 
         party: r.party,
         totalBalance: r.totalBalance,
       }));
@@ -93,9 +117,10 @@ const TotalBoxBalance: React.FC = () => {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Party</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Balance of Boxes</th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Details</th>
             </tr>
           </thead>
-          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+          {/* <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
             {data.map((item, i) => (
               <tr key={i}>
                 <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">{item.party}</td>
@@ -104,7 +129,54 @@ const TotalBoxBalance: React.FC = () => {
                 </td>
               </tr>
             ))}
-          </tbody>
+          </tbody> */}
+
+          <tbody>
+  {data.map((item, i) => (
+    <React.Fragment key={i}>
+      <tr>
+        <td className="px-6 py-4 font-medium">{item.party}</td>
+        <td className="px-6 py-4">{item.totalBalance}</td>
+        <td className="px-6 py-4">
+          <button
+            onClick={() => fetchCustomers(item.partyId)}
+            className="text-blue-600 text-sm underline"
+          >
+            View Customers
+          </button>
+        </td>
+      </tr>
+
+      {expandedPartyId === item.partyId && (
+        <tr>
+          <td colSpan={3} className="bg-gray-50 p-4">
+            {customerLoading ? (
+              <div>Loading...</div>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <th>Customer</th>
+                    <th>Box Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {customers.map((c, idx) => (
+                    <tr key={idx}>
+                      <td>{c.customer}</td>
+                      <td>{c.total_balance}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </td>
+        </tr>
+      )}
+    </React.Fragment>
+  ))}
+</tbody>
+
           <tfoot className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">Grand Total</td>

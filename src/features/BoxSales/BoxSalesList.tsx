@@ -122,27 +122,50 @@ const EditModal: React.FC<EditModalProps> = ({
     }
   }, [entry, parties, salesmenList, products, customers]);
   const boxTypeTotals = React.useMemo(() => {
-  if (!editData) return [];
+    if (!editData) return [];
 
-  const map = new Map<string, number>();
+    const map = new Map<string, number>();
 
-  editData.items.forEach(item => {
-    if (!item.box_type) return;
+    editData.items.forEach(item => {
+      if (!item.box_type) return;
 
-    const boxCount = parseFloat(item.box) || 0;
-    map.set(item.box_type, (map.get(item.box_type) || 0) + boxCount);
-  });
+      const boxCount = parseFloat(item.box) || 0;
+      map.set(item.box_type, (map.get(item.box_type) || 0) + boxCount);
+    });
 
-  return Array.from(map.entries()).map(([boxTypeId, total]) => {
-    const name =
-      parties.find(p => p.id === String(boxTypeId))?.name || boxTypeId;
+    return Array.from(map.entries()).map(([boxTypeId, total]) => {
+      const name =
+        parties.find(p => p.id === String(boxTypeId))?.name || boxTypeId;
 
-    return { name, total };
-  });
-}, [editData, parties]);
+      return { name, total };
+    });
+  }, [editData, parties]);
 
 
   if (!isOpen || !editData) return null;
+
+  const handleHeaderChange = (field: keyof BoxSalesEntry, value: any) => {
+    setEditData(prev => {
+      if (!prev) return null;
+      let updatedItems = prev.items;
+
+      // If party changes, update box_type for all items
+      if (field === 'party') {
+        updatedItems = prev.items.map(item => ({ ...item, box_type: value }));
+      }
+
+      const updated = { ...prev, [field]: value, items: updatedItems };
+
+      // If totalBox changes, recalculate balance
+      if (field === 'totalBox') {
+        const totalBoxNum = parseInt(String(value)) || 0;
+        const soldBoxes = updated.items.reduce((sum, item) => sum + (parseFloat(item.box) || 0), 0);
+        updated.balance = totalBoxNum - soldBoxes;
+      }
+
+      return updated;
+    });
+  };
 
   const handleItemChange = (itemId: string, field: string, value: string) => {
     setEditData(prev => {
@@ -150,8 +173,6 @@ const EditModal: React.FC<EditModalProps> = ({
       const updatedItems = prev.items.map(item => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value };
-
-
           return updatedItem;
         }
         return item;
@@ -243,7 +264,7 @@ const EditModal: React.FC<EditModalProps> = ({
       id: crypto.randomUUID(),
       customer: '',
       box: '',
-      box_type: '',
+      box_type: editData.party,
     };
 
 
@@ -278,7 +299,7 @@ const EditModal: React.FC<EditModalProps> = ({
     }
   };
 
-  
+
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -308,9 +329,18 @@ const EditModal: React.FC<EditModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
                 Party
               </label>
-              <p className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white">
+              {/* <p className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white">
                 {getName(editData.party, parties)}
-              </p>
+              </p> */}
+              <SearchableInput
+                value={editData.party}
+                onChange={(value) => handleHeaderChange('party', value)}
+                placeholder="Select Party"
+                searchData={parties}
+                onSelect={(party) => handleHeaderChange('party', party.id)}
+                createRoute="/create-party"
+                entityType="party"
+              />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
@@ -440,7 +470,7 @@ const EditModal: React.FC<EditModalProps> = ({
                         // value={
                         //   parties.find(p => p.id === String(item.box_type))?.name || ""
                         // }
-                        value={parties.find(p => p.id === String(item.box_type))?.name || ""}
+                        value={item.box_type || ""}
 
                         onChange={(value) => {
                           // this is user typing name, but we store raw text until they select
@@ -500,30 +530,30 @@ const EditModal: React.FC<EditModalProps> = ({
                 ))}
               </tbody>
               <tfoot>
-  <tr className="bg-gray-100 dark:bg-gray-700">
-    <td
-      colSpan={4}
-      className="border border-gray-300 dark:border-gray-600 px-4 py-3"
-    >
-      <div className="flex flex-wrap gap-4 text-sm font-semibold text-gray-900 dark:text-white">
-        {boxTypeTotals.length > 0 ? (
-          boxTypeTotals.map(bt => (
-            <span
-              key={bt.name}
-              className="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg"
-            >
-              {bt.name} – {bt.total}
-            </span>
-          ))
-        ) : (
-          <span className="text-gray-500 dark:text-gray-400">
-            No box types
-          </span>
-        )}
-      </div>
-    </td>
-  </tr>
-</tfoot>
+                <tr className="bg-gray-100 dark:bg-gray-700">
+                  <td
+                    colSpan={4}
+                    className="border border-gray-300 dark:border-gray-600 px-4 py-3"
+                  >
+                    <div className="flex flex-wrap gap-4 text-sm font-semibold text-gray-900 dark:text-white">
+                      {boxTypeTotals.length > 0 ? (
+                        boxTypeTotals.map(bt => (
+                          <span
+                            key={bt.name}
+                            className="px-3 py-1 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg"
+                          >
+                            {bt.name} – {bt.total}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500 dark:text-gray-400">
+                          No box types
+                        </span>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              </tfoot>
 
             </table>
           </div>
