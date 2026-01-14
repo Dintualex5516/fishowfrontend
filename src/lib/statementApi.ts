@@ -1,4 +1,3 @@
-
 import { api } from './api';
 export interface StatementRow {
   saleId: number;
@@ -51,10 +50,16 @@ export interface BoxTransactionItem {
   box_sold: number;
   box_sale: number;
   box_receive: number;
+  remark: string;
 }
 
+// export interface BoxTransactionsResponse {
+//   ok: boolean;
+//   data: BoxTransactionItem[];
+// }
 export interface BoxTransactionsResponse {
   ok: boolean;
+  openingBalance: number;   // ✅ ADD THIS
   data: BoxTransactionItem[];
 }
 
@@ -74,4 +79,3 @@ export async function getBoxTransactions(
 
   return res.data;
 }
-

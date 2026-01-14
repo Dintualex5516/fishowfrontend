@@ -26,8 +26,8 @@ const FishBoxReceivedForm: React.FC = () => {
   ]);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [focusNewItem, setFocusNewItem] = useState<string | null>(null);
-   const [isSaving, setIsSaving] = useState(false);
-  
+  const [isSaving, setIsSaving] = useState(false);
+
 
   // Field order for keyboard navigation
   const fieldOrder: (keyof BoxReceivedItem)[] = ['customer', 'boxCount'];
@@ -42,33 +42,33 @@ const FishBoxReceivedForm: React.FC = () => {
 
 
   useEffect(() => {
-  let mounted = true;
-  const fetchLookups = async () => {
-    try {
-      const pageSize = 200; // preload reasonably large set
-      const [custResp, partyResp] = await Promise.all([
-        listEntities('customers', { page: 1, pageSize }),
-        listEntities('parties',   { page: 1, pageSize }),
-        // add salesmen/products if needed
-      ]);
+    let mounted = true;
+    const fetchLookups = async () => {
+      try {
+        const pageSize = 200; // preload reasonably large set
+        const [custResp, partyResp] = await Promise.all([
+          listEntities('customers', { page: 1, pageSize }),
+          listEntities('parties', { page: 1, pageSize }),
+          // add salesmen/products if needed
+        ]);
 
-      if (!mounted) return;
+        if (!mounted) return;
 
-      if (custResp && Array.isArray(custResp.data)) {
-        setCustomers(custResp.data.map(e => ({ id: String(e.id), name: e.name })));
+        if (custResp && Array.isArray(custResp.data)) {
+          setCustomers(custResp.data.map(e => ({ id: String(e.id), name: e.name })));
+        }
+        if (partyResp && Array.isArray(partyResp.data)) {
+          setParties(partyResp.data.map(e => ({ id: String(e.id), name: e.name })));
+        }
+      } catch (err) {
+        console.error('Error loading lookups via listEntities:', err);
+        setNotification({ message: 'Failed loading lookup data', type: 'error' });
       }
-      if (partyResp && Array.isArray(partyResp.data)) {
-        setParties(partyResp.data.map(e => ({ id: String(e.id), name: e.name })));
-      }
-    } catch (err) {
-      console.error('Error loading lookups via listEntities:', err);
-      setNotification({ message: 'Failed loading lookup data', type: 'error' });
-    }
-  };
+    };
 
-  fetchLookups();
-  return () => { mounted = false; };
-}, []);
+    fetchLookups();
+    return () => { mounted = false; };
+  }, []);
 
   // Focus on new item when it's created
   useEffect(() => {
@@ -139,74 +139,60 @@ const FishBoxReceivedForm: React.FC = () => {
     }, 0);
   };
 
-  
+
 
   const handleSave = async () => {
-  if (!party) {
-    setNotification({ message: 'Please select a party', type: 'error' });
-    return;
-  }
-
-  // Build rows for update: only include customer rows that have positive boxes.
-  const rowsToSave = items
-    .map(it => ({
-      customerId: String(it.customer || '').trim(),
-      boxes: parseInt(it.boxCount || '0', 10) || 0,
-    }))
-    .filter(r => r.customerId && r.boxes > 0);
-
-  if (rowsToSave.length === 0) {
-    setNotification({ message: 'Please provide at least one customer with boxes', type: 'error' });
-    return;
-  }
-
-  // Map ids -> names (backend expects partyName/customerName strings)
-  // const partyObj = parties.find(p => String(p.id) === String(party));
-  // const partyName = partyObj ? partyObj.name : String(party);
-
-  // const entries = rowsToSave.map(r => {
-  //   const cust = customers.find(c => String(c.id) === String(r.customerId));
-  //   return { customerName: cust ? cust.name : r.customerId, boxes: r.boxes };
-  // });
-// const entries = rowsToSave.map(r => ({
-//   customerId: String(r.customerId),
-//   boxes: r.boxes
-// }));
-const entries = rowsToSave.map(r => ({ customerId: String(r.customerId), boxes: r.boxes }));
-// send partyId (not partyName)
-const partyIdToSend = String(party);
-// const resp = await incrementBoxReceiveBatch(partyIdToSend, entries);
-// console.log('incrementBoxReceiveBatch response:', resp);
-
-  try {
-    setIsSaving(true);
- const resp = await incrementBoxReceiveBatch(partyIdToSend, entries);
-console.log('incrementBoxReceiveBatch response:', resp);
-    // resp expected: { ok: true, updated: [...], missing: [...] }
-    console.log("incrementBoxReceiveBatch response:", resp);
-    const updatedCount = (resp.updated || []).length;
-    const missing = resp.missing || [];
-
-    if (updatedCount > 0) {
-      setNotification({ message: `${updatedCount} rows updated`, type: 'success' });
-    }
-    if (missing.length > 0) {
-      setNotification({ message: `Missing rows: ${missing.join(', ')}`, type: 'error' });
+    if (!party) {
+      setNotification({ message: 'Please select a party', type: 'error' });
+      return;
     }
 
-    // If everything updated successfully, reset the form (optionally)
-    if (missing.length === 0) {
-      setDate(new Date().toISOString().split('T')[0]);
-      setParty('');
-      setItems([{ id: Date.now().toString(), customer: '', boxCount: '' }]);
+    // Build rows for update: only include customer rows that have positive boxes.
+    const rowsToSave = items
+      .map(it => ({
+        customerId: String(it.customer || '').trim(),
+        boxes: parseInt(it.boxCount || '0', 10) || 0,
+      }))
+      .filter(r => r.customerId && r.boxes > 0);
+
+    if (rowsToSave.length === 0) {
+      setNotification({ message: 'Please provide at least one customer with boxes', type: 'error' });
+      return;
     }
-  } catch (err) {
-  const e: any = err;
-  setNotification({ message: e?.response?.data?.message ?? e?.message ?? 'Failed to save', type: 'error' });
-} finally {
-    setIsSaving(false);
+
+
+    const entries = rowsToSave.map(r => ({ customerId: String(r.customerId), boxes: r.boxes }));
+
+    const partyIdToSend = String(party);
+
+
+    try {
+      setIsSaving(true);
+      const resp = await incrementBoxReceiveBatch(partyIdToSend, entries, date);
+      // resp expected: { ok: true, updated: [...], missing: [...] }
+      const updatedCount = (resp.updated || []).length;
+      const missing = resp.missing || [];
+
+      if (updatedCount > 0) {
+        setNotification({ message: `${updatedCount} rows updated`, type: 'success' });
+      }
+      if (missing.length > 0) {
+        setNotification({ message: `Missing rows: ${missing.join(', ')}`, type: 'error' });
+      }
+
+      // If everything updated successfully, reset the form (optionally)
+      if (missing.length === 0) {
+        setDate(new Date().toISOString().split('T')[0]);
+        setParty('');
+        setItems([{ id: Date.now().toString(), customer: '', boxCount: '' }]);
+      }
+    } catch (err) {
+      const e: any = err;
+      setNotification({ message: e?.response?.data?.message ?? e?.message ?? 'Failed to save', type: 'error' });
+    } finally {
+      setIsSaving(false);
+    }
   }
-}
 
   // Auto-hide notification after 3 seconds
   useEffect(() => {
@@ -316,11 +302,10 @@ console.log('incrementBoxReceiveBatch response:', resp);
       {/* Notification Toast */}
       {notification && (
         <div className="fixed top-4 right-4 z-50">
-          <div className={`px-4 py-3 rounded-lg shadow-lg border ${
-            notification.type === 'success'
+          <div className={`px-4 py-3 rounded-lg shadow-lg border ${notification.type === 'success'
               ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
               : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
-          }`}>
+            }`}>
             <div className="flex items-center space-x-2">
               {notification.type === 'success' ? (
                 <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">

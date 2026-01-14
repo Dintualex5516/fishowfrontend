@@ -14,7 +14,7 @@ const BoxStatement = () => {
     const [selectedCustomerName, setSelectedCustomerName] = useState('');
     const [customers, setCustomers] = useState<Entity[]>([]);
     const [transactions, setTransactions] = useState<BoxTransactionItem[]>([]);
-    // const [oldBalance, setOldBalance] = useState(0);
+    const [oldBalance, setOldBalance] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
@@ -24,6 +24,7 @@ const BoxStatement = () => {
             try {
                 const response = await listEntities('customers', { pageSize: 1000 });
                 setCustomers(response.data);
+
             } catch (err) {
                 console.error('Failed to load customers:', err);
             }
@@ -44,7 +45,7 @@ const BoxStatement = () => {
         return {
             totalBoxSale,
             totalBoxReceived,
-            totalBalance: totalBoxSale - totalBoxReceived
+            totalBalance: oldBalance + totalBoxSale - totalBoxReceived
         };
     };
 
@@ -54,46 +55,47 @@ const BoxStatement = () => {
 
 
     useEffect(() => {
-  const fetchData = async () => {
-    // ✅ Only call API when start, end and customer are all selected
-    if (!startDate || !endDate || !selectedCustomerId) {
-      setTransactions([]);
-         // optional: reset
-      setError('');       // important: no error when user is still selecting
-      return;
-    }
+        const fetchData = async () => {
+            // ✅ Only call API when start, end and customer are all selected
+            if (!startDate || !endDate || !selectedCustomerId) {
+                setTransactions([]);
+                // optional: reset
+                setError('');       // important: no error when user is still selecting
+                return;
+            }
 
-    setLoading(true);
-    setError('');
+            setLoading(true);
+            setError('');
 
-    try {
-      const params: any = {
-        start: startDate,
-        end: endDate,
-        pageSize: 1000,
-        customer_id: Number(selectedCustomerId),   // 👈 always send, we know it exists
-      };
+            try {
+                const params: any = {
+                    start: startDate,
+                    end: endDate,
+                    pageSize: 1000,
+                    customer_id: Number(selectedCustomerId),   // 👈 always send, we know it exists
+                };
 
-      const response = await getBoxTransactions(params);
-      setTransactions(response.data);
+                const response = await getBoxTransactions(params);
+                setTransactions(response.data);
+                setOldBalance(response.openingBalance ?? 0);
 
-      // TODO: replace with real old balance if you implement it later
-     
-    } catch (err) {
-      console.error('Failed to fetch transactions:', err);
-      setError('Failed to load transaction data');
-      setTransactions([]);
-    } finally {
-      setLoading(false);
-    }
-  };
+                // TODO: replace with real old balance if you implement it later
 
-  const timeoutId = setTimeout(() => {
-    fetchData();
-  }, 500);
+            } catch (err) {
+                console.error('Failed to fetch transactions:', err);
+                setError('Failed to load transaction data');
+                setTransactions([]);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-  return () => clearTimeout(timeoutId);
-}, [startDate, endDate, selectedCustomerId]);
+        const timeoutId = setTimeout(() => {
+            fetchData();
+        }, 500);
+
+        return () => clearTimeout(timeoutId);
+    }, [startDate, endDate, selectedCustomerId]);
 
 
     const handleCustomerSelect = (customer: any) => {
@@ -251,9 +253,9 @@ const BoxStatement = () => {
                                     <div className="text-base font-semibold text-gray-900 dark:text-white">
                                         <span className="text-gray-600 dark:text-gray-400">Name:</span> {selectedCustomerName || 'All Customers'}
                                     </div>
-                                    {/* <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                                    <div className="text-sm text-gray-600 dark:text-gray-400 mt-1">
                                         <span className="font-medium">Old Balance:</span> {oldBalance}
-                                    </div> */}
+                                    </div>
                                 </div>
 
                                 {/* Transactions Table */}
@@ -277,6 +279,10 @@ const BoxStatement = () => {
                                                     Box Received
                                                 </th>
                                                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                                                    Remark
+                                                </th>
+
+                                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                                                     Balance
                                                 </th>
                                             </tr>
@@ -285,17 +291,20 @@ const BoxStatement = () => {
                                         <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                                             {transactions.length > 0 ? (
                                                 transactions.map((txn, index) => {
-                                                    // Calculate running balance
-                                                    const runningBalance = transactions
-                                                        .slice(0, index + 1)
-                                                        .reduce(
-                                                            (acc, t) =>
-                                                                acc +
-                                                                (t.box_sold || 0) +     
-                                                                (t.box_sale || 0) -
-                                                                (t.box_receive || 0),
-                                                            0
-                                                        );
+
+                                                    const runningBalance =
+                                                        oldBalance +
+                                                        transactions
+                                                            .slice(0, index + 1)
+                                                            .reduce(
+                                                                (acc, t) =>
+                                                                    acc +
+                                                                    (t.box_sold || 0) +
+                                                                    (t.box_sale || 0) -
+                                                                    (t.box_receive || 0),
+                                                                0
+                                                            );
+
 
 
                                                     return (
@@ -319,6 +328,10 @@ const BoxStatement = () => {
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                                 {txn.box_receive || 0}
                                                             </td>
+                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                                {txn.remark || ''}
+                                                            </td>
+
                                                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                                                 {runningBalance}
                                                             </td>
