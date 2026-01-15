@@ -78,7 +78,7 @@ export default defineConfig({
         short_name: 'FishowERP',
         name: 'Fishow ERP Application',
 
-        start_url: '/dashboard',   // ✅ FIX
+        start_url: '/login',   // ✅ FIX
         scope: '/',       // ✅ FIX
 
         display: 'standalone',
