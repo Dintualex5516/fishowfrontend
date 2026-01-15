@@ -59,7 +59,7 @@ export interface BoxTransactionItem {
 // }
 export interface BoxTransactionsResponse {
   ok: boolean;
-  openingBalance: number;   // ✅ ADD THIS
+  openingBalance: number;   
   data: BoxTransactionItem[];
 }
 
@@ -78,4 +78,31 @@ export async function getBoxTransactions(
   });
 
   return res.data;
+}
+
+
+export type DailyReturnRow = {
+  party_id: number;
+  box_type: string;
+  total_returned: number;
+};
+
+export type DailyReturnCustomerRow = {
+  customer_id: number;
+  customer: string;
+  boxes_returned: number;
+};
+
+export async function getDailyReturn(date: string) {
+  const { data } = await api.get('/api/statements/daily-return', {
+    params: { date },
+  });
+  return data;
+}
+
+export async function getDailyReturnCustomers(date: string, partyId: number) {
+  const { data } = await api.get('/api/statements/daily-return/customers', {
+    params: { date, partyId },
+  });
+  return data;
 }

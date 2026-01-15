@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from '../../database/supabase';
 import { useNavigate, useParams } from 'react-router-dom';
 
 const getCurrentDate = () => {
   const today = new Date();
-  return today.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+  return today.toISOString().split('T')[0]; 
 };
 import AdminBoard from '../../components/AdminBoard';
 import DailyCollectionSheet from './DailyCollectionSheet';
@@ -15,6 +14,7 @@ import { getDailySummary } from '../../lib/ledgerApi';
 import BoxReceiveReport from './BoxReceiveReport';
 import DailySummaryBox from './DailySummaryBox';
 import TotalBoxBalance from './TotalBoxBalance';
+import DailyBoxReturnReport from './DailyBoxReturnReport';
 
 
 const Reports: React.FC = () => {
@@ -29,10 +29,10 @@ const Reports: React.FC = () => {
   });
   const [singleDate, setSingleDate] = useState(() =>
     currentReportType === 'total-box-balance' ||
-    currentReportType === 'daily-summary-box' ||
-    currentReportType === 'daily-summary' ||
-    currentReportType === 'daily-collection' ||
-    currentReportType === 'sales-register'
+      currentReportType === 'daily-summary-box' ||
+      currentReportType === 'daily-summary' ||
+      currentReportType === 'daily-collection' ||
+      currentReportType === 'sales-register'
       ? getCurrentDate()
       : ''
   );
@@ -46,6 +46,7 @@ const Reports: React.FC = () => {
     'box-receive': BoxReceiveReport,
     'daily-summary-box': DailySummaryBox,
     'total-box-balance': TotalBoxBalance,
+    'daily-box-return': DailyBoxReturnReport
   };
 
   const reportTitles: { [key: string]: string } = {
@@ -56,6 +57,7 @@ const Reports: React.FC = () => {
     'box-receive': 'Box Receive Report',
     'daily-summary-box': 'Daily Summary (Box)',
     'total-box-balance': 'Total Box Balance',
+    'daily-box-return': 'Daily Box Return Report'
   };
 
   const handleDateRangeChange = (startDate: string, endDate: string) => {
@@ -74,6 +76,7 @@ const Reports: React.FC = () => {
       currentReportType === 'daily-summary' ||
       currentReportType === 'daily-collection' ||
       currentReportType === 'sales-register';
+    currentReportType === 'daily-box-return'
     if (isSingleDateReport && !singleDate) {
       setSingleDate(getCurrentDate());
     }
@@ -88,43 +91,22 @@ const Reports: React.FC = () => {
     }
   }, [currentReportType, dateRange.startDate, dateRange.endDate]);
 
-  // Fetch total sale for Daily Summary when date changes
-  // useEffect(() => {
-  //   const fetchDailySummaryTotal = async () => {
-  //     if (currentReportType !== 'daily-summary' || !singleDate) {
-  //       setDailySummaryTotal(0);
-  //       return;
-  //     }
-  //     const { data, error } = await supabase
-  //       .from('sales')
-  //       .select('total_amount')
-  //       .eq('date', singleDate);
-  //     if (error) {
-  //       setDailySummaryTotal(0);
-  //       return;
-  //     }
-  //     const total = (data || []).reduce((sum: number, row: any) => sum + (Number(row.total_amount) || 0), 0);
-  //     setDailySummaryTotal(total);
-  //   };
-  //   fetchDailySummaryTotal();
-  // }, [currentReportType, singleDate]);
-
   useEffect(() => {
-  const fetchDailySummaryTotal = async () => {
-    if (currentReportType !== 'daily-summary' || !singleDate) {
-      setDailySummaryTotal(0);
-      return;
-    }
-    try {
-      const res = await getDailySummary(singleDate);
-      setDailySummaryTotal(Number(res.totals.grandTotal) || 0);
-    } catch (e) {
-      console.error(e);
-      setDailySummaryTotal(0);
-    }
-  };
-  fetchDailySummaryTotal();
-}, [currentReportType, singleDate]);
+    const fetchDailySummaryTotal = async () => {
+      if (currentReportType !== 'daily-summary' || !singleDate) {
+        setDailySummaryTotal(0);
+        return;
+      }
+      try {
+        const res = await getDailySummary(singleDate);
+        setDailySummaryTotal(Number(res.totals.grandTotal) || 0);
+      } catch (e) {
+        console.error(e);
+        setDailySummaryTotal(0);
+      }
+    };
+    fetchDailySummaryTotal();
+  }, [currentReportType, singleDate]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
@@ -151,7 +133,7 @@ const Reports: React.FC = () => {
         {/* Date Filter - Only show for reports that need it */}
         {currentReportType !== 'total-box-balance' && (
           <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-4 mb-4">
-            {currentReportType === 'daily-summary-box' || currentReportType === 'daily-summary' || currentReportType === 'daily-collection' || currentReportType === 'sales-register' ? (
+            {currentReportType === 'daily-summary-box' || currentReportType === 'daily-summary' || currentReportType === 'daily-collection' || currentReportType === 'sales-register' || currentReportType === 'daily-box-return' ? (
               <div className="flex items-center gap-4">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300 whitespace-nowrap">
                   Select Date:
@@ -204,6 +186,8 @@ const Reports: React.FC = () => {
             ) : currentReportType === 'daily-collection' ? (
               <ReportComponent date={singleDate} />
             ) : currentReportType === 'sales-register' ? (
+              <ReportComponent date={singleDate} />
+            ) : currentReportType === 'daily-box-return' ? (
               <ReportComponent date={singleDate} />
             ) : (
               <ReportComponent dateRange={dateRange} />
