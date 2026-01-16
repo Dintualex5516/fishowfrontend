@@ -23,6 +23,7 @@ interface SalesEntry {
     kg: string;
     price: string;
     total: string;
+    remark?: string | null;
   }>;
   totalAmount: string;
   createdAt: string;
@@ -77,7 +78,7 @@ const EditModal: React.FC<EditModalProps> = ({
         const itemId = products.find(p => p.name === item.item)?.id || item.item;
         // try to find customer id from customers prop else keep as-is
         const custId = customers.find(c => c.name === (item.customer || ""))?.id || item.customer || "";
-        return { ...item, item: itemId, customer: custId };
+        return { ...item, item: itemId, customer: custId, remark: item.remark ?? "", };
       });
       setEditData({ ...entry, party: partyId, salesman: salesmanId, items: updatedItems });
     }
@@ -363,6 +364,9 @@ const EditModal: React.FC<EditModalProps> = ({
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Total
                   </th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Remark
+                  </th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-200 w-20">
                     Action
                   </th>
@@ -480,6 +484,16 @@ const EditModal: React.FC<EditModalProps> = ({
                         placeholder="0.00"
                       />
                     </td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      <input
+                        type="text"
+                        value={item.remark || ""}
+                        onChange={(e) => handleItemChange(item.id, "remark", e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        placeholder="Remark"
+                      />
+                    </td>
+
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                       <button
                         onClick={() => removeRow(item.id)}
@@ -637,6 +651,7 @@ const SalesSummary: React.FC = () => {
               price: it.price != null ? String(it.price) : '',
               total: it.total != null ? String(it.total) : '',
               customer: it.customer_name ?? it.customerName ?? it.customer ?? '',
+              remark: it.remark ?? "",
             }))
             : [];
 

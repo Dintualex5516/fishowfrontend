@@ -18,6 +18,7 @@ interface BoxSalesEntry {
     customer: string;
     box: string;
     box_type?: string | null;
+    remark?: string | null;
   }>;
 
   totalAmount: string;
@@ -116,7 +117,7 @@ const EditModal: React.FC<EditModalProps> = ({
           parties.find(p => p.name === item.box_type)?.id || // if name coming from FE mapping
           parties.find(p => p.id === String(item.box_type))?.id || // if ID already in place
           item.box_type;
-        return { ...item, customer: customerId, box_type: boxTypeId, };
+        return { ...item, customer: customerId, box_type: boxTypeId, remark: item.remark ?? "" };
       });
       setEditData({ ...entry, party: partyId, salesman: salesmanId, items: updatedItems });
     }
@@ -322,7 +323,7 @@ const EditModal: React.FC<EditModalProps> = ({
                 Date
               </label>
               <p className="px-3 py-2 bg-gray-50 dark:bg-gray-700 rounded-lg text-gray-900 dark:text-white">
-                {editData.date}
+                {new Date(editData.date).toLocaleDateString("en-GB")}
               </p>
             </div>
             <div>
@@ -420,10 +421,10 @@ const EditModal: React.FC<EditModalProps> = ({
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Box
                   </th>
-                  {/* <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
-                    Price
-                  </th>
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                    Remark
+                  </th>
+                  {/* <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
                     Total
                   </th> */}
                   <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center text-sm font-medium text-gray-700 dark:text-gray-200 w-20">
@@ -515,7 +516,15 @@ const EditModal: React.FC<EditModalProps> = ({
                         data-item-id={item.id}
                       />
                     </td>
-
+                    <td className="border border-gray-300 dark:border-gray-600 px-3 py-2">
+                      <input
+                        type="text"
+                        value={item.remark || ""}
+                        onChange={(e) => handleItemChange(item.id, "remark", e.target.value)}
+                        className="w-full px-2 py-1 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
+                        placeholder="Remark"
+                      />
+                    </td>
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-center">
                       <button
                         onClick={() => removeRow(item.id)}
@@ -659,6 +668,7 @@ const BoxSalesList: React.FC = () => {
             customer: it.customer ?? '',
             box: String(it.box ?? 0),
             box_type: it.box_type ? String(it.box_type) : null,
+            remark: it.remark ?? "",
           }))
 
           ,
@@ -782,6 +792,7 @@ const BoxSalesList: React.FC = () => {
           customer: it.customer,
           box: Number(it.box || 0),
           box_type: it.box_type ? Number(it.box_type) : null,
+           remark: it.remark ?? null,
         }))
         ,
         // optionally load_number/load_number_str if you want to change them
