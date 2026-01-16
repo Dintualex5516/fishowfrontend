@@ -369,33 +369,33 @@ const EditModal: React.FC<EditModalProps> = ({
           </div>
 
           {/* Action Buttons Row */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+            <div className="flex items-center">
               <button
                 onClick={addRow}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-500 transition-all"
+                className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-500 transition-all w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Row</span>
               </button>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               <button
                 onClick={() => entry && onDelete(entry)}
-                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors flex items-center space-x-2"
+                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors flex items-center justify-center space-x-2"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete Entry</span>
               </button>
               <button
                 onClick={onClose}
-                className="px-6 py-2 bg-gray-600 dark:bg-gray-500 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+                className="px-4 sm:px-6 py-2 bg-gray-600 dark:bg-gray-500 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center space-x-2"
+                className="px-4 sm:px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"
               >
                 <Save className="w-4 h-4" />
                 <span>Save Changes</span>
@@ -842,58 +842,55 @@ const BoxSalesList: React.FC = () => {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Box Sales List</h1>
-            <div className="flex flex-col md:flex-row items-start md:items-center justify-between w-full gap-4">
-              <div></div>
-              <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
-                <div className="flex items-center space-x-2">
-                  <label>Salesman:</label>
-                  <input
-                    type="text"
-                    value={selectedSalesman}
-                    onChange={(e) => {
-                      setSelectedSalesman(e.target.value);
-                      setCurrentPage(1); // Reset to first page when filtering
-                    }}
-                    placeholder="Search salesman..."
-                    className="min-w-[120px] md:min-w-[150px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <label>From:</label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => {
-                      setStartDate(e.target.value);
-                      setCurrentPage(1); // Reset to first page when filtering
-                    }}
-                    className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div className="flex items-center space-x-2">
-                  <label>To:</label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => {
-                      setEndDate(e.target.value);
-                      setCurrentPage(1); // Reset to first page when filtering
-                    }}
-                    className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                  />
-                </div>
-                <div className="flex items-center space-x-1">
-                  <FileText className="w-4 h-4" />
-                  <span>{filteredEntries.length} entries found</span>
-                </div>
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-4 sm:p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 sm:mb-6 gap-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Box Sales List</h1>
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-4 text-sm text-gray-600 dark:text-gray-300 w-full lg:w-auto">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <label className="whitespace-nowrap">Salesman:</label>
+                <input
+                  type="text"
+                  value={selectedSalesman}
+                  onChange={(e) => {
+                    setSelectedSalesman(e.target.value);
+                    setCurrentPage(1); // Reset to first page when filtering
+                  }}
+                  placeholder="Search salesman..."
+                  className="flex-1 sm:flex-none min-w-0 sm:min-w-[120px] md:min-w-[150px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <label className="whitespace-nowrap">From:</label>
+                <input
+                  type="date"
+                  value={startDate}
+                  onChange={(e) => {
+                    setStartDate(e.target.value);
+                    setCurrentPage(1); // Reset to first page when filtering
+                  }}
+                  className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-full sm:w-auto"
+                />
+              </div>
+              <div className="flex items-center space-x-2">
+                <label className="whitespace-nowrap">To:</label>
+                <input
+                  type="date"
+                  value={endDate}
+                  onChange={(e) => {
+                    setEndDate(e.target.value);
+                    setCurrentPage(1); // Reset to first page when filtering
+                  }}
+                  className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-full sm:w-auto"
+                />
+              </div>
+              <div className="flex items-center space-x-1 text-xs sm:text-sm">
+                <FileText className="w-4 h-4" />
+                <span>{filteredEntries.length} entries found</span>
               </div>
 
               {/* Pagination Info */}
               {totalPages > 1 && (
-                <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+                <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                   <span>Page {currentPage} of {totalPages}</span>
                   <div className="flex space-x-1">
                     <button
@@ -916,8 +913,8 @@ const BoxSalesList: React.FC = () => {
             </div>
           </div>
 
-          {/* Summary Boxes - All in one line */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+          {/* Summary Boxes - Responsive grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4 sm:mb-6 p-3 sm:p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
 
             <div className="text-center">
               <div className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Boxes Added</div>
@@ -990,39 +987,39 @@ const BoxSalesList: React.FC = () => {
                 <tbody>
                   {currentEntries.map((entry, index) => (
                     <tr key={entry.id} className="hover:bg-gray-50 dark:hover:bg-gray-700 bg-white dark:bg-gray-800">
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white truncate" title={entry.load_number_string || entry.id}>
                         {entry.load_number_string || entry.id}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
-                        {new Date(entry.date).toLocaleDateString()}
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white">
+                        {new Date(entry.date).toLocaleDateString('en-GB').replace(/\//g, '-')}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white truncate" title={entry.party}>
                         {entry.party}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white">
                         {entry.totalBox}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white">
                         {entry.balance}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white hidden sm:table-cell" title={entry.salesman}>
                         {entry.salesman}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-center">
+                        <div className="flex items-center justify-center space-x-1 sm:space-x-2">
                           <button
                             onClick={() => viewDetails(entry)}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors p-1 sm:p-0"
                             title="View Details"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                           </button>
                           <button
                             onClick={() => handleEdit(entry)}
-                            className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors"
+                            className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors p-1 sm:p-0"
                             title="Edit Entry"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </td>
@@ -1071,7 +1068,7 @@ const BoxSalesList: React.FC = () => {
                     Date
                   </label>
                   <p className="text-sm text-gray-900 dark:text-white">
-                    {new Date(selectedEntry.date).toLocaleDateString()}
+                    {new Date(selectedEntry.date).toLocaleDateString('en-GB').replace(/\//g, '-')}
                   </p>
                 </div>
                 <div>
@@ -1186,7 +1183,7 @@ const BoxSalesList: React.FC = () => {
                   <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                     This action cannot be undone. This will permanently delete the box sales entry for{' '}
                     <span className="font-medium">{deletingEntry.party}</span> on{' '}
-                    <span className="font-medium">{new Date(deletingEntry.date).toLocaleDateString()}</span>.
+                    <span className="font-medium">{new Date(deletingEntry.date).toLocaleDateString('en-GB').replace(/\//g, '-')}</span>.
                   </p>
                 </div>
               </div>

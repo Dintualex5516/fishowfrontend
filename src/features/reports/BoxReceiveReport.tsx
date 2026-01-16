@@ -83,7 +83,7 @@ const BoxReceiveReport: React.FC<BoxReceiveReportProps> = ({ dateRange }) => {
     if (!el) return;
     const w = window.open("", "", "height=600,width=800");
     if (!w) return;
-    const currentDate = new Date().toISOString().split("T")[0];
+    const currentDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     w.document.title = `Box Receive Report - ${currentDate}`;
     w.document.write('<html><head><title>Fishow - Box Receive Report</title>');
     w.document.write(
@@ -141,15 +141,15 @@ const BoxReceiveReport: React.FC<BoxReceiveReportProps> = ({ dateRange }) => {
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Date</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Party</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Total Box</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Salesman</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Customer</th>
-              {/* <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Item</th> */}
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Boxes Sold</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Box Received</th>
-              <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Balance</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Date</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Party</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total Box</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Salesman</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+              {/* <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Item</th> */}
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Boxes Sold</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Box Received</th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Balance</th>
             </tr>
           </thead>
 
@@ -161,29 +161,29 @@ const BoxReceiveReport: React.FC<BoxReceiveReportProps> = ({ dateRange }) => {
 
               return (
                 <tr key={row.id}>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
-                    {new Date(row.date).toLocaleDateString()}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                    {new Date(row.date).toLocaleDateString('en-GB').replace(/\//g, '-')}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {row.party}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {row.totalBox}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {row.salesman}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {row.customer}
                   </td>
-                  {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                  {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {row.item}
                   </td> */}
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                     {row.boxesSold}
                   </td>
 
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-200 flex items-center gap-2">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white flex items-center gap-2">
                     <span>{row.boxReceived}</span>
                     <input
                       type="number"
@@ -198,11 +198,10 @@ const BoxReceiveReport: React.FC<BoxReceiveReportProps> = ({ dateRange }) => {
                   </td>
 
                   <td
-                    className={`px-6 py-4 whitespace-nowrap text-sm ${
-                      (Number.isFinite(typed) && typed !== 0 ? liveBalance : row.balance) < 0
-                        ? "text-red-500"
-                        : "text-green-500"
-                    }`}
+                    className={`px-6 py-4 whitespace-nowrap text-sm ${(Number.isFinite(typed) && typed !== 0 ? liveBalance : row.balance) < 0
+                      ? "text-red-500"
+                      : "text-green-500"
+                      }`}
                   >
                     {Number.isFinite(typed) && typed !== 0
                       ? liveBalance

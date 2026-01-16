@@ -1,5 +1,4 @@
-
-import  { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PrintLayout from '../../components/PrintLayout';
 import SearchableInput from '../../components/SearchableInput';
@@ -9,8 +8,9 @@ import { listEntities, Entity } from '../../lib/entities';
 
 const CashStatement = () => {
   const navigate = useNavigate();
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
+  const today = new Date().toLocaleDateString('en-CA');
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
   const [selectedCustomerId, setSelectedCustomerId] = useState('');
   const [selectedCustomerName, setSelectedCustomerName] = useState('');
   const [customers, setCustomers] = useState<Entity[]>([]);
@@ -53,6 +53,7 @@ const CashStatement = () => {
         }
 
         const response = await getStatement(params);
+        console.log(response)
         setStatementData(response);
       } catch (err) {
         console.error('Failed to fetch statement:', err);
@@ -101,7 +102,7 @@ const CashStatement = () => {
       <div class="header-info">
         <p><strong>From:</strong> ${startDate} <strong>To:</strong> ${endDate}</p>
         ${selectedCustomerName ? `<p><strong>Name:</strong> ${selectedCustomerName}</p>` : ''}
-        ${statementData?.totals ? `<p><strong>Old Balance:</strong> ₹${statementData.totals.balanceBeforeStart .toFixed(2)}</p>` : ''}
+        ${statementData?.totals ? `<p><strong>Old Balance:</strong> ₹${statementData.totals.balanceBeforeStart.toFixed(2)}</p>` : ''}
       </div>
     `);
     w.document.write(el.innerHTML);
@@ -237,12 +238,15 @@ const CashStatement = () => {
                     <thead className="bg-gray-50 dark:bg-gray-700">
                       <tr>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Date
+                        </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Party
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Item
                         </th>
-                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Salesman
                         </th>
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -254,6 +258,9 @@ const CashStatement = () => {
                         <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                           Total
                         </th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                          Remark
+                        </th>
                       </tr>
                     </thead>
 
@@ -262,13 +269,16 @@ const CashStatement = () => {
                         statementData.rows.map((row, index) => (
                           <tr key={index}>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {new Date(row.date).toLocaleDateString('en-GB')}
+                            </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                               {row.party}
                             </td>
                             <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                              {row.item} 
+                              {row.item}
                             </td>
-                             <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
-                               {row.salesman }
+                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                              {row.salesman}
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                               {row.boxesSold}
@@ -279,56 +289,58 @@ const CashStatement = () => {
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                               {row.grandTotal.toFixed(4)}
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                              {row.remark || '-'}
+                            </td>
                           </tr>
                         ))
                       ) : (
                         <tr>
-                          <td colSpan={5} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                          <td colSpan={8} className="px-6 py-4 text-center text-sm text-gray-500 dark:text-gray-400">
                             {loading ? 'Loading...' : 'No data available'}
                           </td>
                         </tr>
                       )}
                     </tbody>
 
-                    {/* Footer with Totals */}
-                    <tfoot className="bg-gray-50 dark:bg-gray-700">
+                    <tfoot className="bg-gray-50 dark:bg-gray-700 border-t-2 border-gray-200 dark:border-gray-600">
                       <tr>
-                        <td colSpan={4} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                        <td colSpan={7} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white border-r dark:border-gray-600">
                           Total:
                         </td>
-                        <td className="px-6 py-3 text-sm font-bold text-gray-900 dark:text-white">
+                        <td className="px-6 py-3 text-right text-sm font-bold text-gray-900 dark:text-white">
                           ₹{statementData?.totals.salesBetween.toFixed(4) ?? '0.0000'}
                         </td>
                       </tr>
                       <tr>
-                        <td colSpan={4} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                        <td colSpan={7} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white border-r dark:border-gray-600">
                           Old Balance:
                         </td>
-                        <td className="px-6 py-3 text-sm font-bold text-gray-900 dark:text-white">
+                        <td className="px-6 py-3 text-right text-sm font-bold text-gray-900 dark:text-white">
                           ₹{statementData?.totals.balanceBeforeStart.toFixed(4) ?? '0.0000'}
                         </td>
                       </tr>
                       <tr>
-                        <td colSpan={4} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                        <td colSpan={7} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white border-r dark:border-gray-600">
                           Grand Total:
                         </td>
-                        <td className="px-6 py-3 text-sm font-bold text-blue-600 dark:text-blue-400">
+                        <td className="px-6 py-3 text-right text-sm font-bold text-blue-600 dark:text-blue-400">
                           ₹{((statementData?.totals.salesBetween || 0) + (statementData?.totals.balanceBeforeStart || 0)).toFixed(4)}
                         </td>
                       </tr>
                       <tr>
-                        <td colSpan={4} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                        <td colSpan={7} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white border-r dark:border-gray-600">
                           Cash Paid:
                         </td>
-                        <td className="px-6 py-3 text-sm font-bold text-green-600 dark:text-green-400">
+                        <td className="px-6 py-3 text-right text-sm font-bold text-green-600 dark:text-green-400">
                           ₹{statementData?.totals.totalCashPaid.toFixed(4) ?? '0.0000'}
                         </td>
                       </tr>
-                      <tr className="bg-gray-100 dark:bg-gray-600">
-                        <td colSpan={4} className="px-6 py-4 text-right text-sm font-bold text-gray-900 dark:text-white">
+                      <tr className="bg-gray-100 dark:bg-gray-600/50">
+                        <td colSpan={7} className="px-6 py-4 text-right text-sm font-bold text-gray-900 dark:text-white border-r dark:border-gray-500">
                           Final Balance:
                         </td>
-                        <td className="px-6 py-4 text-sm font-bold text-red-600 dark:text-red-400">
+                        <td className="px-6 py-4 text-right text-sm font-bold text-red-600 dark:text-red-400">
                           ₹{(((statementData?.totals.salesBetween || 0) + (statementData?.totals.balanceBeforeStart || 0)) - (statementData?.totals.totalCashPaid || 0)).toFixed(4)}
                         </td>
                       </tr>

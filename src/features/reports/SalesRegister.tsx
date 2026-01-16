@@ -47,7 +47,7 @@ const SalesRegister: React.FC<SalesRegisterProps> = ({ date }) => {
     if (!printContents) return;
     const printWindow = window.open("", "", "height=600,width=800");
     if (!printWindow) return;
-    const currentDateStr = new Date().toISOString().split("T")[0];
+    const currentDateStr = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     printWindow.document.title = `Sales Register - ${currentDateStr}`;
     printWindow.document.write('<html><head><title>Fishow - Sales Register</title>');
     printWindow.document.write(

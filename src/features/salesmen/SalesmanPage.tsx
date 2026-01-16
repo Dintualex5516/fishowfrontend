@@ -338,9 +338,9 @@ const SalesmanPage: React.FC = () => {
             <table className="min-w-[600px] w-full border-collapse border border-gray-300 dark:border-gray-600">
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-700">
-                  <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Created At</th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Name</th>
-                  <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Actions</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Created At</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Name</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -355,8 +355,8 @@ const SalesmanPage: React.FC = () => {
                 ) : (
                   salesmen.map((s) => (
                     <tr key={String(s.id)} className="bg-white dark:bg-gray-800 border-b border-gray-300 dark:border-gray-600">
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">{s.created_at ? new Date(s.created_at).toLocaleString() : '-'}</td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-sm text-gray-900 dark:text-white">{s.created_at ? new Date(s.created_at).toLocaleString() : '-'}</td>
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-sm text-gray-900 dark:text-white">
                         {editingId === s.id ? (
                           <input
                             type="text"
@@ -368,7 +368,7 @@ const SalesmanPage: React.FC = () => {
                           s.name
                         )}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-sm text-gray-900 dark:text-white">
                         <div className="flex space-x-2">
                           {editingId === s.id ? (
                             <>

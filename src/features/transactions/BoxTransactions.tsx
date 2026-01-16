@@ -27,11 +27,9 @@ const BoxTransactions: React.FC = () => {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(defaultPageSize);
   const [totalPages, setTotalPages] = useState(1);
-  const [startDate, setStartDate] = useState<string>(lastNDaysDateString(30));
-  const [endDate, setEndDate] = useState<string>(() => {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-  });
+  const today = new Date().toLocaleDateString('en-CA');
+  const [startDate, setStartDate] = useState<string>(today);
+  const [endDate, setEndDate] = useState<string>(today);
   const [queryCustomer, setQueryCustomer] = useState<string>(''); // optional future use
 
   // Edit modal state
@@ -72,9 +70,9 @@ const BoxTransactions: React.FC = () => {
   };
 
   const handleReset = () => {
-    setStartDate(lastNDaysDateString(30));
-    const d = new Date();
-    setEndDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`);
+    const todayStr = new Date().toLocaleDateString('en-CA');
+    setStartDate(todayStr);
+    setEndDate(todayStr);
     setPage(1);
     fetchList();
   };
@@ -179,14 +177,18 @@ const BoxTransactions: React.FC = () => {
                 ) : (
                   rows.map((r) => (
                     <tr key={r.id} className="hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{r.trans_date}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{r.party.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{r.customer.name}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{r.box_receive}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{r.box_sale}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <button onClick={() => openEdit(r)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300 mr-4">Edit</button>
-                        <button onClick={() => handleDelete(r.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Delete</button>
+                      <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                        {new Date(r.trans_date).toLocaleDateString('en-GB').replace(/\//g, '-')}
+                      </td>
+                      <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{r.party.name}</td>
+                      <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{r.customer.name}</td>
+                      <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{r.box_receive}</td>
+                      <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">{r.box_sale}</td>
+                      <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex justify-end space-x-2">
+                          <button onClick={() => openEdit(r)} className="text-blue-600 hover:text-blue-900 dark:text-blue-400 dark:hover:text-blue-300">Edit</button>
+                          <button onClick={() => handleDelete(r.id)} className="text-red-600 hover:text-red-900 dark:text-red-400 dark:hover:text-red-300">Delete</button>
+                        </div>
                       </td>
                     </tr>
                   ))

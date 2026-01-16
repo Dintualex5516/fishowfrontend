@@ -13,7 +13,7 @@
   "backgroundColor": "#FFFFFF",
   "enableNotifications": true,
   "startUrl": "/login",
-  "iconUrl": "https://fishowfrontend.vercel.app/assets/logo512.png",
+  "iconUrl": "https://fishowfrontend.vercel.app/logo.png",
   "splashScreenFadeOutDuration": 300,
   "signingKey": {
     "path": "C:\\Users\\iNsPiRoN\\Desktop\\FISHOW\\frontend\\android.keystore",

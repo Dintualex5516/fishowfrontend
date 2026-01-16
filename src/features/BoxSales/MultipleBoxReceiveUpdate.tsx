@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import AdminBoard from '../../components/AdminBoard';
@@ -132,7 +131,7 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
         <AdminBoard />
         <div className="flex items-center justify-center h-64">
-          <p className="text-gray-900 dark:text-white">Loading data...</p>
+          <p className="text-gray-900 dark:text-white text-sm sm:text-base">Loading data...</p>
         </div>
       </div>
     );
@@ -147,8 +146,8 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
         <div className="fixed top-4 right-4 z-50">
           <div
             className={`px-4 py-3 rounded-lg shadow-lg border ${notification.type === 'success'
-                ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
-                : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
+              ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
+              : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
               }`}
           >
             <span className="font-medium">{notification.message}</span>
@@ -157,15 +156,15 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
       )}
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 sm:mb-6 gap-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
               Multiple Box Receive
             </h1>
             <button
               onClick={handleSaveChanges}
               disabled={items.filter(item => item.isModified).length === 0 || saving}
-              className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all"
+              className="flex items-center justify-center space-x-2 px-4 sm:px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all shadow-md hover:shadow-lg w-full sm:w-auto"
             >
               <Save className={`w-4 h-4 ${saving ? 'animate-pulse' : ''}`} />
               <span>{saving ? 'Saving...' : 'Save Changes'}</span>
@@ -175,19 +174,17 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
           <div className="overflow-x-auto">
             <table
               className="w-full border-collapse border border-gray-300 dark:border-gray-600"
-              style={{ minWidth: '800px' }}
+              style={{ minWidth: '600px' }}
             >
               <thead>
                 <tr className="bg-gray-50 dark:bg-gray-700">
-                  <th className="border px-4 py-3 text-left text-sm font-medium">Customer</th>
-                  <th className="border px-4 py-3 text-left text-sm font-medium">Party</th>
-                  <th className="border px-4 py-3 text-left text-sm font-medium">Opening Balance</th>
-                  <th className="border px-4 py-3 text-left text-sm font-medium">Today's Sales</th>
-                  <th className="border px-4 py-3 text-left text-sm font-medium">Total</th>
-                  <th className="border px-4 py-3 text-left text-sm font-medium" style={{ minWidth: '120px' }}>
-                    Received Box
-                  </th>
-                  <th className="border px-4 py-3 text-left text-sm font-medium">Closing Balance</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 md:px-4 py-1 sm:py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[80px]">Customer</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 md:px-4 py-1 sm:py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[60px]">Party</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 md:px-4 py-1 sm:py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[70px]">Opening</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 md:px-4 py-1 sm:py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[60px]">Sales</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 md:px-4 py-1 sm:py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[50px]">Total</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 md:px-4 py-1 sm:py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[80px]">Received</th>
+                  <th className="border border-gray-300 dark:border-gray-600 px-1 sm:px-2 md:px-4 py-1 sm:py-2 md:py-3 text-left text-xs md:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[70px]">Balance</th>
                 </tr>
               </thead>
               <tbody>
@@ -196,14 +193,14 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
                     key={`${item.id}-${index}`}
                     className={index % 2 === 0 ? 'bg-white dark:bg-gray-800' : 'bg-gray-50 dark:bg-gray-700'}
                   >
-                    <td className="border px-4 py-3 text-sm">{item.customer}</td>
-                    <td className="border px-4 py-3 text-sm">{item.party}</td>
-                    <td className="border px-4 py-3 text-sm">{item.openingBalance}</td>
-                    <td className="border px-4 py-3 text-sm">{item.todaySales}</td>
-                    <td className="border px-4 py-3 text-sm">{item.total}</td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">{item.customer}</td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">{item.party}</td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">{item.openingBalance}</td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">{item.todaySales}</td>
+                    <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">{item.total}</td>
 
                     {/* ✅ Editable "Received Box" input with existing value shown as placeholder */}
-                    <td className="border px-4 py-3">
+                    <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3">
                       <input
                         type="text"
                         value={item.rcdBox === 0 ? '' : item.rcdBox.toString()}
@@ -233,20 +230,20 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
                             });
                           }
                         }}
-                        className="w-full px-3 py-2 border-none focus:ring-2 focus:ring-blue-500 focus:outline-none bg-transparent text-sm text-gray-900 dark:text-white"
+                        className="w-full px-2 sm:px-3 py-1 sm:py-2 border-none focus:ring-2 focus:ring-blue-500 focus:outline-none bg-transparent text-xs sm:text-sm text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
                       />
                     </td>
 
                     <td
-                      className={`border px-4 py-3 text-sm font-medium ${item.balance < 0
-                          ? 'text-red-600 dark:text-red-400'
-                          : item.balance > 0
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-gray-900 dark:text-white'
+                      className={`border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm font-medium ${item.balance < 0
+                        ? 'text-red-600 dark:text-red-400'
+                        : item.balance > 0
+                          ? 'text-green-600 dark:text-green-400'
+                          : 'text-gray-900 dark:text-white'
                         }`}
                     >
                       {item.balance}
-                      {item.isModified && <span className="ml-2 text-xs text-blue-600">(modified)</span>}
+                      {item.isModified && <span className="ml-1 sm:ml-2 text-xs text-blue-600 dark:text-blue-400">(modified)</span>}
                     </td>
                   </tr>
                 ))}

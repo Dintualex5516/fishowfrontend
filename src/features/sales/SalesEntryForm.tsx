@@ -1,4 +1,3 @@
-
 import { Plus, Save, Trash2, Eye } from 'lucide-react';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -80,7 +79,9 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
                 Date
               </label>
-              <p className="text-gray-900 dark:text-white">{formData.date}</p>
+              <p className="text-gray-900 dark:text-white">
+                {formData.date ? new Date(formData.date).toLocaleDateString('en-GB').replace(/\//g, '-') : '-'}
+              </p>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
@@ -1173,7 +1174,7 @@ const SalesEntryForm: React.FC = () => {
         )}
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-6 h-[600px] flex flex-col">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-6 min-h-[600px] flex flex-col">
             <div className="flex justify-between items-center mb-6 flex-shrink-0">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Cash Sales</h1>
 
@@ -1314,7 +1315,7 @@ const SalesEntryForm: React.FC = () => {
             {/* Total Amount Section - Moved between header and table */}
             <div className="flex-shrink-0 bg-gray-50 dark:bg-gray-700 border-t border-b border-gray-200 dark:border-gray-600 my-2">
               <div className="px-4 py-3">
-                <div className="flex justify-end items-center space-x-8">
+                <div className="flex justify-end items-center space-x-4 sm:space-x-8">
                   <div className="flex items-center">
                     <span className="text-sm font-medium text-gray-700 dark:text-gray-200 mr-2">
                       Grand Total Box:
@@ -1342,7 +1343,7 @@ const SalesEntryForm: React.FC = () => {
                 <table className="w-full border-collapse border border-gray-300 dark:border-gray-600">
                   <thead className="bg-gray-50 dark:bg-gray-700 sticky top-0 z-10">
                     <tr>
-                      <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[220px]">
+                      <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[150px] sm:min-w-[220px]">
                         Customer <span className="text-red-500">*</span>
                       </th>
                       <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -1357,7 +1358,7 @@ const SalesEntryForm: React.FC = () => {
                       <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">
                         Total
                       </th>
-                      <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[220px]">
+                      <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 min-w-[150px] sm:min-w-[220px]">
                         Item
                       </th>
                       <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">
@@ -1371,7 +1372,7 @@ const SalesEntryForm: React.FC = () => {
                   <tbody>
                     {items.map((item) => (
                       <tr key={item.id} className="bg-white dark:bg-gray-800">
-                        <td className="border border-gray-300 dark:border-gray-600 p-2 min-w-[220px]">
+                        <td className="border border-gray-300 dark:border-gray-600 p-2 min-w-[150px] sm:min-w-[220px]">
                           <SearchableInput
                             value={item.customer}
                             onChange={(value) => updateItem(item.id, 'customer', value)}
@@ -1452,7 +1453,7 @@ const SalesEntryForm: React.FC = () => {
                             placeholder="0.00"
                           />
                         </td>
-                        <td className="border border-gray-300 dark:border-gray-600 p-2 min-w-[220px]">
+                        <td className="border border-gray-300 dark:border-gray-600 p-2 min-w-[150px] sm:min-w-[220px]">
                           <SearchableInput
                             value={item.item}
                             onChange={(value) => updateItem(item.id, 'item', value)}
@@ -1501,30 +1502,30 @@ const SalesEntryForm: React.FC = () => {
             </div>
 
             {/* Fixed Bottom Action Buttons */}
-            <div className="flex justify-between items-center pt-6 border-t border-gray-200 dark:border-gray-600 flex-shrink-0 mt-4">
-              <div className="flex space-x-3">
+            <div className="flex flex-col sm:flex-row justify-between items-stretch sm:items-center pt-6 border-t border-gray-200 dark:border-gray-600 flex-shrink-0 mt-4 gap-4 sm:gap-0">
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                 <button
                   onClick={addItem}
-                  className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-500 transition-all"
+                  className="flex items-center justify-center space-x-2 px-6 py-3 sm:px-4 sm:py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-500 transition-all shadow-md hover:shadow-lg text-base sm:text-sm"
                 >
-                  <Plus className="w-4 h-4" />
+                  <Plus className="w-5 h-5 sm:w-4 sm:h-4" />
                   <span>Add Row</span>
                 </button>
 
                 <button
                   onClick={handlePreview}
-                  className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-500 transition-all"
+                  className="flex items-center justify-center space-x-2 px-6 py-3 sm:px-4 sm:py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-500 transition-all shadow-md hover:shadow-lg text-base sm:text-sm"
                 >
-                  <Eye className="w-4 h-4" />
+                  <Eye className="w-5 h-5 sm:w-4 sm:h-4" />
                   <span>Preview/F2</span>
                 </button>
               </div>
 
               <button
                 onClick={handleSave}
-                className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-all"
+                className="flex items-center justify-center space-x-2 px-8 py-3 sm:px-6 sm:py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-500 transition-all shadow-md hover:shadow-lg text-base sm:text-sm font-semibold"
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-5 h-5 sm:w-4 sm:h-4" />
                 <span>Save Entry</span>
               </button>
             </div>

@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 const getCurrentDate = () => {
   const today = new Date();
-  return today.toISOString().split('T')[0]; 
+  return today.toISOString().split('T')[0];
 };
 import AdminBoard from '../../components/AdminBoard';
 import DailyCollectionSheet from './DailyCollectionSheet';
@@ -24,7 +24,7 @@ const Reports: React.FC = () => {
 
   const [dateRange, setDateRange] = useState(() => {
     const today = getCurrentDate();
-    const isSingleDateReport = currentReportType === 'total-box-balance' || currentReportType === 'daily-summary-box' || currentReportType === 'daily-summary' || currentReportType === 'sales-register';
+    const isSingleDateReport = currentReportType === 'total-box-balance' || currentReportType === 'daily-summary-box' || currentReportType === 'daily-summary' || currentReportType === 'sales-register' || currentReportType === 'daily-box-return' || currentReportType === 'daily-collection';
     return isSingleDateReport ? { startDate: '', endDate: '' } : { startDate: today, endDate: today };
   });
   const [singleDate, setSingleDate] = useState(() =>
@@ -32,7 +32,8 @@ const Reports: React.FC = () => {
       currentReportType === 'daily-summary-box' ||
       currentReportType === 'daily-summary' ||
       currentReportType === 'daily-collection' ||
-      currentReportType === 'sales-register'
+      currentReportType === 'sales-register' ||
+      currentReportType === 'daily-box-return'
       ? getCurrentDate()
       : ''
   );
@@ -75,8 +76,8 @@ const Reports: React.FC = () => {
       currentReportType === 'daily-summary-box' ||
       currentReportType === 'daily-summary' ||
       currentReportType === 'daily-collection' ||
-      currentReportType === 'sales-register';
-    currentReportType === 'daily-box-return'
+      currentReportType === 'sales-register' ||
+      currentReportType === 'daily-box-return';
     if (isSingleDateReport && !singleDate) {
       setSingleDate(getCurrentDate());
     }

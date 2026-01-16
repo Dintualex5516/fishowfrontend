@@ -10,8 +10,8 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
   const [loading, setLoading] = useState(false);
   const [totalBalance, setTotalBalance] = useState(0);
   const [expandedPartyId, setExpandedPartyId] = useState<number | null>(null);
-const [customers, setCustomers] = useState<any[]>([]);
-const [customerLoading, setCustomerLoading] = useState(false);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [customerLoading, setCustomerLoading] = useState(false);
 
 
   useEffect(() => {
@@ -34,18 +34,43 @@ const [customerLoading, setCustomerLoading] = useState(false);
   };
 
   const fetchCustomers = async (partyId: number) => {
-  setCustomerLoading(true);
-  try {
-    const res = await getDailyBoxSummaryCustomers(date, partyId);
-    setCustomers(res.rows || []);
-    setExpandedPartyId(partyId);
-  } catch (e) {
-    console.error(e);
-    setCustomers([]);
-  } finally {
-    setCustomerLoading(false);
-  }
-};
+    setCustomerLoading(true);
+    try {
+      const res = await getDailyBoxSummaryCustomers(date, partyId);
+      setCustomers(res.rows || []);
+      setExpandedPartyId(partyId);
+    } catch (e) {
+      console.error(e);
+      setCustomers([]);
+    } finally {
+      setCustomerLoading(false);
+    }
+  };
+
+  const handlePrintCustomerDetails = (partyName: string) => {
+    const w = window.open("", "", "height=600,width=800");
+    if (!w) return;
+    const currentDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
+    w.document.title = `Customer Box Summary - ${partyName} - ${currentDate}`;
+    w.document.write('<html><head><title>Fishow - Customer Box Summary</title>');
+    w.document.write('<style>body{font-family: Arial, sans-serif; margin: 20px;} h1,h2{text-align:center;} table{width:100%; border-collapse:collapse;} th,td{border:1px solid #000; padding:8px; text-align:left;} th{background:#f2f2f2;} .footer{margin-top:20px; text-align:center; font-size:12px;}</style>');
+    w.document.write(`</head><body><h1>Fishow</h1><h2>Customer Box Summary: ${partyName}</h2>`);
+    w.document.write('<p style="text-align:center;">Date: ' + currentDate + '</p>');
+
+    let tableHtml = '<table><thead><tr><th>Customer</th><th>Boxes</th></tr></thead><tbody>';
+    customers.forEach(c => {
+      tableHtml += `<tr><td>${c.customer}</td><td>${c.boxes}</td></tr>`;
+    });
+    tableHtml += '</tbody></table>';
+
+    w.document.write(tableHtml);
+    w.document.write('<div class="footer">Thank you for your business!</div>');
+    w.document.write("</body></html>");
+    w.document.close();
+    w.focus();
+    w.print();
+    w.close();
+  };
 
 
   const handlePrint = () => {
@@ -53,11 +78,11 @@ const [customerLoading, setCustomerLoading] = useState(false);
     if (!printContents) return;
     const w = window.open("", "", "height=600,width=800");
     if (!w) return;
-    const currentDate = new Date().toISOString().split("T")[0];
+    const currentDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
     w.document.title = `Daily Summary Box - ${currentDate}`;
     w.document.write('<html><head><title>Fishow - Daily Summary Box</title>');
     w.document.write(
-      '<style>body{font-family: Arial, sans-serif; margin:20px;} h1,h2{text-align:center;} table{width:100%; border-collapse:collapse;} th,td{border:1px solid #000; padding:8px; text-align:left;} th{background:#f2f2f2;} .footer{margin-top:20px; text-align:center; font-size:12px;}</style>'
+      '<style>body{font-family: Arial, sans-serif; margin:20px;} h1,h2{text-align:center;} table{width:100%; border-collapse:collapse;} th,td{border:1px solid #000; padding:8px; text-align:left;} th{background:#f2f2f2;} .footer{margin-top:20px; text-align:center; font-size:12px;} .no-print{display:none !important;}</style>'
     );
     w.document.write("</head><body><h1>Fishow</h1><h2>Daily Summary (Box)</h2>");
     w.document.write(printContents);
@@ -95,11 +120,14 @@ const [customerLoading, setCustomerLoading] = useState(false);
         <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Party
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
                 Box Sold(cash sale+box sale)
+              </th>
+              <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider no-print">
+                Action
               </th>
             </tr>
           </thead>
@@ -116,60 +144,72 @@ const [customerLoading, setCustomerLoading] = useState(false);
             ))}
           </tbody> */}
 
-          <tbody>
-  {data.map((row, idx) => (
-    <React.Fragment key={idx}>
-      <tr>
-        <td className="px-6 py-4 font-medium">{row.party}</td>
-        <td className="px-6 py-4">{row.balance}</td>
-        <td className="px-6 py-4">
-          <button
-            onClick={() => fetchCustomers(row.partyId)}
-            className="text-blue-600 text-sm underline"
-          >
-            View Customers
-          </button>
-        </td>
-      </tr>
+          <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+            {data.map((row, idx) => (
+              <React.Fragment key={idx}>
+                <tr>
+                  <td className="px-6 py-4 font-medium text-sm text-gray-900 dark:text-white">{row.party}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">{row.balance}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300 no-print">
+                    <button
+                      onClick={() => fetchCustomers(row.partyId)}
+                      className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 text-sm underline"
+                    >
+                      View Customers
+                    </button>
+                  </td>
+                </tr>
 
-      {expandedPartyId === row.partyId && (
-        <tr>
-          <td colSpan={3} className="bg-gray-50 p-4">
-            {customerLoading ? (
-              <div>Loading...</div>
-            ) : (
-              <table className="w-full text-sm">
-                <thead>
+                {expandedPartyId === row.partyId && (
                   <tr>
-                    <th className="text-left">Customer</th>
-                    <th className="text-left">Boxes</th>
+                    <td colSpan={3} className="bg-gray-50 dark:bg-gray-700 p-4">
+                      {customerLoading ? (
+                        <div className="text-gray-500 dark:text-gray-400">Loading...</div>
+                      ) : (
+                        <div className="space-y-4">
+                          <div className="flex justify-between items-center no-print">
+                            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Customer Details: {row.party}</h3>
+                            <button
+                              onClick={() => handlePrintCustomerDetails(row.party)}
+                              className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                            >
+                              Print Details
+                            </button>
+                          </div>
+                          <table className="w-full text-sm">
+                            <thead className="bg-gray-50 dark:bg-gray-700">
+                              <tr>
+                                <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                                <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Boxes</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
+                              {customers.map((c, i) => (
+                                <tr key={i}>
+                                  <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{c.customer}</td>
+                                  <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{c.boxes}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {customers.map((c, i) => (
-                    <tr key={i}>
-                      <td>{c.customer}</td>
-                      <td>{c.boxes}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </td>
-        </tr>
-      )}
-    </React.Fragment>
-  ))}
-</tbody>
+                )}
+              </React.Fragment>
+            ))}
+          </tbody>
 
           <tfoot className="bg-gray-50 dark:bg-gray-700">
             <tr>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+              <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                 Total Balance
               </td>
-              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+              <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                 {totalBalance}
               </td>
+              <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white no-print"></td>
             </tr>
           </tfoot>
         </table>

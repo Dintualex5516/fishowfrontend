@@ -174,10 +174,10 @@ const ItemPage: React.FC = () => {
               <table className="min-w-[600px] w-full border-collapse border border-gray-300 dark:border-gray-600">
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-700">
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">ID</th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Name</th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Created At</th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Actions</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">ID</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Name</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Created At</th>
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200">Actions</th>
                   </tr>
                 </thead>
                 <tbody>

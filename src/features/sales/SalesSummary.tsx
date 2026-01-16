@@ -306,33 +306,33 @@ const EditModal: React.FC<EditModalProps> = ({
           </div>
 
           {/* Action Buttons Row */}
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <div className="flex items-center space-x-3">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center justify-between gap-3 sm:gap-4 mb-4">
+            <div className="flex items-center">
               <button
                 onClick={addRow}
-                className="flex items-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-500 transition-all"
+                className="flex items-center justify-center space-x-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-500 transition-all w-full sm:w-auto"
               >
                 <Plus className="w-4 h-4" />
                 <span>Add Row</span>
               </button>
             </div>
-            <div className="flex items-center space-x-3">
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-3">
               <button
                 onClick={() => entry && onDelete(entry)}
-                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors flex items-center space-x-2"
+                className="px-4 py-2 bg-red-600 dark:bg-red-500 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors flex items-center justify-center space-x-2"
               >
                 <Trash2 className="w-4 h-4" />
                 <span>Delete Entry</span>
               </button>
               <button
                 onClick={onClose}
-                className="px-6 py-2 bg-gray-600 dark:bg-gray-500 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
+                className="px-4 sm:px-6 py-2 bg-gray-600 dark:bg-gray-500 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSave}
-                className="px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center space-x-2"
+                className="px-4 sm:px-6 py-2 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center justify-center space-x-2"
               >
                 <Save className="w-4 h-4" />
                 <span>Save Changes</span>
@@ -510,8 +510,9 @@ const SalesSummary: React.FC = () => {
   const [editingEntry, setEditingEntry] = useState<SalesEntry | null>(null);
   const [deletingEntry, setDeletingEntry] = useState<SalesEntry | null>(null);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date().toISOString().split('T')[0]);
+  const today = new Date().toLocaleDateString('en-CA');
+  const [startDate, setStartDate] = useState(today);
+  const [endDate, setEndDate] = useState(today);
   const [selectedSalesman, setSelectedSalesman] = useState('');
   const [parties, setParties] = useState<{ id: string; name: string }[]>([]);
   const [salesmenList, setSalesmenList] = useState<{ id: string; name: string }[]>([]);
@@ -809,8 +810,8 @@ const SalesSummary: React.FC = () => {
       {notification && (
         <div className="fixed top-4 right-4 z-50">
           <div className={`px-4 py-3 rounded-lg shadow-lg border ${notification.type === 'success'
-              ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
-              : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
+            ? 'bg-green-100 border-green-200 text-green-800 dark:bg-green-900 dark:border-green-700 dark:text-green-200'
+            : 'bg-red-100 border-red-200 text-red-800 dark:bg-red-900 dark:border-red-700 dark:text-red-200'
             }`}>
             <div className="flex items-center space-x-2">
               {notification.type === 'success' ? (
@@ -830,11 +831,11 @@ const SalesSummary: React.FC = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-600 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sales Summary</h1>
-            <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600 dark:text-gray-300">
-              <div className="flex items-center space-x-2">
-                <label>Salesman:</label>
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-6 gap-4">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">Sales Summary</h1>
+            <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-center gap-3 sm:gap-4 text-sm text-gray-600 dark:text-gray-300">
+              <div className="flex items-center space-x-2 w-full sm:w-auto">
+                <label className="whitespace-nowrap">Salesman:</label>
                 <input
                   type="text"
                   value={selectedSalesman}
@@ -843,11 +844,11 @@ const SalesSummary: React.FC = () => {
                     setCurrentPage(1); // Reset to first page when filtering
                   }}
                   placeholder="Search salesman..."
-                  className="min-w-[120px] md:min-w-[150px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
+                  className="flex-1 sm:flex-none min-w-0 sm:min-w-[120px] md:min-w-[150px] px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 text-sm"
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <label>From:</label>
+                <label className="whitespace-nowrap">From:</label>
                 <input
                   type="date"
                   value={startDate}
@@ -855,11 +856,11 @@ const SalesSummary: React.FC = () => {
                     setStartDate(e.target.value);
                     setCurrentPage(1); // Reset to first page when filtering
                   }}
-                  className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-full sm:w-auto"
                 />
               </div>
               <div className="flex items-center space-x-2">
-                <label>To:</label>
+                <label className="whitespace-nowrap">To:</label>
                 <input
                   type="date"
                   value={endDate}
@@ -867,16 +868,16 @@ const SalesSummary: React.FC = () => {
                     setEndDate(e.target.value);
                     setCurrentPage(1); // Reset to first page when filtering
                   }}
-                  className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white w-full sm:w-auto"
                 />
               </div>
-              <div className="flex items-center space-x-1">
+              <div className="flex items-center space-x-1 text-xs sm:text-sm">
                 <FileText className="w-4 h-4" />
                 <span>{filteredEntries.length} entries found</span>
               </div>
 
               {/* Pagination Info - Always show for consistent UI */}
-              <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-300">
+              <div className="flex items-center space-x-2 text-xs sm:text-sm text-gray-600 dark:text-gray-300">
                 <span>Page {currentPage} of {totalPages}</span>
                 <div className="flex space-x-1">
                   <button
@@ -898,8 +899,8 @@ const SalesSummary: React.FC = () => {
             </div>
           </div>
 
-          {/* Summary Boxes - All in one line */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
+          {/* Summary Boxes - Responsive grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600">
             <div className="text-center">
               <div className="text-sm font-medium text-gray-600 dark:text-gray-300 mb-1">Total Sale</div>
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
@@ -945,31 +946,31 @@ const SalesSummary: React.FC = () => {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse border border-gray-300 dark:border-gray-600 table-fixed" style={{ minWidth: '900px' }}>
+              <table className="w-full border-collapse border border-gray-300 dark:border-gray-600 table-fixed" style={{ minWidth: '700px' }}>
                 <thead>
                   <tr className="bg-gray-50 dark:bg-gray-700">
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-20">
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 w-16 sm:w-20">
                       Load No
                     </th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-24">
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 w-20 sm:w-24">
                       Date
                     </th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-32">
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 w-24 sm:w-32">
                       Party
                     </th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-20">
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 w-16 sm:w-20">
                       Total Box
                     </th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-20">
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 w-16 sm:w-20">
                       Boxes Sold
                     </th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-32">
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 w-20 sm:w-32 hidden sm:table-cell">
                       Salesman
                     </th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-left text-sm font-medium text-gray-700 dark:text-gray-200 w-32">
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 w-20 sm:w-32">
                       Total Amount
                     </th>
-                    <th className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center text-sm font-medium text-gray-700 dark:text-gray-200 w-24">
+                    <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 w-16 sm:w-24">
                       Action
                     </th>
                   </tr>
@@ -977,42 +978,42 @@ const SalesSummary: React.FC = () => {
                 <tbody>
                   {currentEntries.map((entry, index) => (
                     <tr key={entry.id} className="bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700">
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white truncate">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white truncate">
                         {entry.load_number_string || entry.id}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
-                        {new Date(entry.date).toLocaleDateString()}
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white">
+                        {new Date(entry.date).toLocaleDateString('en-GB').replace(/\//g, '-')}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white truncate" title={entry.party}>
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white truncate" title={entry.party}>
                         {entry.party}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white">
                         {entry.totalBox}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white">
                         {entry.items.reduce((sum, item) => sum + (parseInt(item.box) || 0), 0)}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white truncate" title={entry.salesman}>
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white truncate hidden sm:table-cell" title={entry.salesman}>
                         {entry.salesman}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-sm text-gray-900 dark:text-white">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-xs sm:text-sm text-gray-900 dark:text-white">
                         ₹{entry.totalAmount}
                       </td>
-                      <td className="border border-gray-300 dark:border-gray-600 px-4 py-3 text-center">
-                        <div className="flex items-center justify-center space-x-2">
+                      <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-4 py-2 sm:py-3 text-center">
+                        <div className="flex items-center justify-center space-x-1 sm:space-x-2">
                           <button
                             onClick={() => viewDetails(entry)}
-                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors p-1 sm:p-0"
                             title="View Details"
                           >
-                            <Eye className="w-4 h-4" />
+                            <Eye className="w-3 h-3 sm:w-4 sm:h-4" />
                           </button>
                           <button
                             onClick={() => handleEdit(entry)}
-                            className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors"
+                            className="text-green-600 dark:text-green-400 hover:text-green-800 dark:hover:text-green-300 transition-colors p-1 sm:p-0"
                             title="Edit Entry"
                           >
-                            <Edit className="w-4 h-4" />
+                            <Edit className="w-3 h-3 sm:w-4 sm:h-4" />
                           </button>
                         </div>
                       </td>
@@ -1028,42 +1029,44 @@ const SalesSummary: React.FC = () => {
         {selectedEntry && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-600">
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">Sales Entry Details</h2>
+              <div className="flex justify-between items-center p-4 sm:p-6 border-b border-gray-200 dark:border-gray-600">
+                <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Sales Entry Details</h2>
                 <button
                   onClick={closeDetails}
-                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl font-bold"
+                  className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-xl sm:text-2xl font-bold"
                 >
                   ×
                 </button>
               </div>
 
-              <div className="p-6 space-y-6">
+              <div className="p-4 sm:p-6 space-y-4 sm:space-y-6">
                 {/* Header Information */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 sm:mb-2">
                       Date
                     </label>
-                    <p className="text-sm text-gray-900 dark:text-white">{new Date(selectedEntry.date).toLocaleDateString()}</p>
+                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">
+                      {new Date(selectedEntry.date).toLocaleDateString('en-GB').replace(/\//g, '-')}
+                    </p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 sm:mb-2">
                       Party
                     </label>
-                    <p className="text-sm text-gray-900 dark:text-white">{selectedEntry.party}</p>
+                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">{selectedEntry.party}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 sm:mb-2">
                       Total Box
                     </label>
-                    <p className="text-sm text-gray-900 dark:text-white">{selectedEntry.totalBox}</p>
+                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">{selectedEntry.totalBox}</p>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-2">
+                    <label className="block text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 mb-1 sm:mb-2">
                       Salesman
                     </label>
-                    <p className="text-sm text-gray-900 dark:text-white">{selectedEntry.salesman}</p>
+                    <p className="text-xs sm:text-sm text-gray-900 dark:text-white">{selectedEntry.salesman}</p>
                   </div>
                 </div>
 
@@ -1072,22 +1075,22 @@ const SalesSummary: React.FC = () => {
                   <table className="w-full border-collapse border border-gray-300 dark:border-gray-600">
                     <thead>
                       <tr className="bg-gray-50 dark:bg-gray-700">
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                        <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">
                           Customer
                         </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                        <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">
                           Item
                         </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                        <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">
                           Box
                         </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                        <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">
                           kg
                         </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                        <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">
                           Price
                         </th>
-                        <th className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-left text-sm font-medium text-gray-700 dark:text-gray-200">
+                        <th className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-left text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200">
                           Total
                         </th>
                       </tr>
@@ -1095,22 +1098,22 @@ const SalesSummary: React.FC = () => {
                     <tbody>
                       {selectedEntry.items.map((item) => (
                         <tr key={item.id} className="bg-white dark:bg-gray-800">
-                          <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                          <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm text-gray-900 dark:text-white">
                             {item.customer || '-'}
                           </td>
-                          <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                          <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm text-gray-900 dark:text-white">
                             {item.item}
                           </td>
-                          <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                          <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm text-gray-900 dark:text-white">
                             {item.box}
                           </td>
-                          <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                          <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm text-gray-900 dark:text-white">
                             {item.kg}
                           </td>
-                          <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                          <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm text-gray-900 dark:text-white">
                             ₹{item.price}
                           </td>
-                          <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
+                          <td className="border border-gray-300 dark:border-gray-600 px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm text-gray-900 dark:text-white">
                             ₹{item.total}
                           </td>
                         </tr>
@@ -1162,7 +1165,9 @@ const SalesSummary: React.FC = () => {
                     <p className="text-sm text-gray-600 dark:text-gray-300 mt-1">
                       This action cannot be undone. This will permanently delete the sales entry for{' '}
                       <span className="font-medium">{deletingEntry.party}</span> on{' '}
-                      <span className="font-medium">{new Date(deletingEntry.date).toLocaleDateString()}</span>.
+                      <span className="font-medium">
+                        {new Date(deletingEntry.date).toLocaleDateString('en-GB').replace(/\//g, '-')}
+                      </span>.
                     </p>
                   </div>
                 </div>

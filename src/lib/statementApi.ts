@@ -1,3 +1,4 @@
+
 import { api } from './api';
 export interface StatementRow {
   saleId: number;
@@ -10,12 +11,14 @@ export interface StatementRow {
   kg: number;
   price: number;
   grandTotal: number;
+  cashPaid?: number;
+  remark: string;
 }
 
 export interface StatementTotals {
-  salesBetween: number;         
-  totalCashPaid: number;        
-  balanceBeforeStart: number;   
+  salesBetween: number;
+  totalCashPaid: number;
+  balanceBeforeStart: number;
 }
 
 export interface StatementResponse {
@@ -45,7 +48,7 @@ export interface BoxTransactionParty {
 
 export interface BoxTransactionItem {
   id: number;
-  trans_date: string; 
+  trans_date: string;
   party: BoxTransactionParty | null;
   box_sold: number;
   box_sale: number;
@@ -59,15 +62,15 @@ export interface BoxTransactionItem {
 // }
 export interface BoxTransactionsResponse {
   ok: boolean;
-  openingBalance: number;   
+  openingBalance: number;
   data: BoxTransactionItem[];
 }
 
 export interface BoxTransactionsParams {
-  start: string;          
-  end: string;            
-  customer_id: number;   
-  pageSize?: number;     
+  start: string;
+  end: string;
+  customer_id: number;
+  pageSize?: number;
 }
 
 export async function getBoxTransactions(
@@ -106,3 +109,5 @@ export async function getDailyReturnCustomers(date: string, partyId: number) {
   });
   return data;
 }
+
+

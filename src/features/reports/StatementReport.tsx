@@ -35,18 +35,18 @@ const StatementReport: React.FC<StatementReportProps> = ({ dateRange }) => {
   }, [dateRange, selectedCustomer]);
 
   useEffect(() => {
-  const fetchCustomers = async () => {
-    try {
-      const response = await listEntities('customers', { page: 1, pageSize: 1000 });
-      const data = Array.isArray(response) ? response : response.data || [];
-      setCustomers(data.map((c: any) => ({ id: String(c.id), name: c.name })));
-    } catch (error) {
-      console.error('Error fetching customers via listEntities:', error);
-    }
-  };
+    const fetchCustomers = async () => {
+      try {
+        const response = await listEntities('customers', { page: 1, pageSize: 1000 });
+        const data = Array.isArray(response) ? response : response.data || [];
+        setCustomers(data.map((c: any) => ({ id: String(c.id), name: c.name })));
+      } catch (error) {
+        console.error('Error fetching customers via listEntities:', error);
+      }
+    };
 
-  fetchCustomers();
-}, []);
+    fetchCustomers();
+  }, []);
 
 
   // const fetchStatementData = async () => {
@@ -133,42 +133,42 @@ const StatementReport: React.FC<StatementReportProps> = ({ dateRange }) => {
   //     setLoading(false);
   //   }
   // };
-// inside StatementReport component
-const fetchStatementData = async () => {
-  setLoading(true);
-  try {
-    const { startDate, endDate } = dateRange;
+  // inside StatementReport component
+  const fetchStatementData = async () => {
+    setLoading(true);
+    try {
+      const { startDate, endDate } = dateRange;
 
-    // ask server for statement rows (send selectedCustomer id or undefined)
-    const resp = await getStatement({
-      start: startDate,
-      end: endDate,
-      customerId: selectedCustomer || undefined,
-    });
+      // ask server for statement rows (send selectedCustomer id or undefined)
+      const resp = await getStatement({
+        start: startDate,
+        end: endDate,
+        customerId: (selectedCustomer || undefined) as any,
+      });
 
-    // Map server rows -> your StatementData[]
-    const rows: StatementData[] = (resp.rows || []).map(r => ({
-      party: r.party ?? "",
-      item: r.item ?? "",
-      salesman: r.salesman ?? "",
-      boxesSold: Number(r.boxesSold || 0),
-      price: Number(r.price || 0),
-      grandTotal: Number(r.grandTotal || 0),
-      cashPaid: Number(r.cashPaid || 0),
-    }));
+      // Map server rows -> your StatementData[]
+      const rows: StatementData[] = (resp.rows || []).map(r => ({
+        party: r.party ?? "",
+        item: r.item ?? "",
+        salesman: r.salesman ?? "",
+        boxesSold: Number(r.boxesSold || 0),
+        price: Number(r.price || 0),
+        grandTotal: Number(r.grandTotal || 0),
+        cashPaid: Number(r.cashPaid || 0),
+      }));
 
-    setData(rows);
+      setData(rows);
 
-    // Optionally, if you previously computed totals client-side and want to use server totals:
-    // You can use resp.totals.totalBoxesSold, resp.totals.totalGrandTotal, resp.totals.totalCashPaid
-    // For backwards compatibility you can keep your client totals code; it's fine either way.
+      // Optionally, if you previously computed totals client-side and want to use server totals:
+      // You can use resp.totals.totalBoxesSold, resp.totals.totalGrandTotal, resp.totals.totalCashPaid
+      // For backwards compatibility you can keep your client totals code; it's fine either way.
 
-  } catch (error) {
-    console.error('Error fetching statement data:', error);
-  } finally {
-    setLoading(false);
-  }
-};
+    } catch (error) {
+      console.error('Error fetching statement data:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const totalBoxesSold = data.reduce((sum, item) => sum + item.boxesSold, 0);
   const totalGrandTotal = data.reduce((sum, item) => sum + item.grandTotal, 0);
@@ -188,7 +188,7 @@ const fetchStatementData = async () => {
     if (printContents) {
       const printWindow = window.open('', '', 'height=600,width=800');
       if (printWindow) {
-        const currentDate = new Date().toISOString().split('T')[0];
+        const currentDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
         printWindow.document.title = `Statement Report - ${currentDate}`;
         printWindow.document.write('<html><head><title>Fishow - Statement Report</title>');
         printWindow.document.write('<style>body{font-family: Arial, sans-serif; margin: 20px; overflow: visible !important; max-width: 100% !important;} h1, h2 {text-align: center;} table {width: 100%; border-collapse: collapse; overflow: visible !important; max-width: 100% !important;} th, td {border: 1px solid #000; padding: 8px; text-align: left;} th {background-color: #f2f2f2;} .footer {margin-top: 20px; text-align: center; font-size: 12px;}</style>');
@@ -250,10 +250,10 @@ const fetchStatementData = async () => {
               <span className="font-semibold">Name: </span>{name}
             </div>
             <div>
-              <span className="font-semibold">From: </span>{new Date(dateRange.startDate).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
+              <span className="font-semibold">From: </span>{new Date(dateRange.startDate).toLocaleDateString('en-GB').replace(/\//g, '-')}
             </div>
             <div>
-              <span className="font-semibold">To: </span>{new Date(dateRange.endDate).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' })}
+              <span className="font-semibold">To: </span>{new Date(dateRange.endDate).toLocaleDateString('en-GB').replace(/\//g, '-')}
             </div>
           </div>
         </div>

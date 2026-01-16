@@ -45,7 +45,7 @@ const DailySummary: React.FC<DailySummaryProps> = ({ date }) => {
     if (printContents) {
       const printWindow = window.open("", "", "height=600,width=800");
       if (printWindow) {
-        const currentDate = new Date().toISOString().split("T")[0];
+        const currentDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
         printWindow.document.title = `Daily Summary - ${currentDate}`;
         printWindow.document.write('<html><head><title>Fishow - Daily Summary</title>');
         printWindow.document.write(
@@ -106,16 +106,16 @@ const DailySummary: React.FC<DailySummaryProps> = ({ date }) => {
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
             {data.map((item, index) => (
               <tr key={index}>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
                   {item.party}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                   {item.totalBox}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                   {item.salesman}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                   ₹{item.grandTotal.toFixed(2)}
                 </td>
               </tr>

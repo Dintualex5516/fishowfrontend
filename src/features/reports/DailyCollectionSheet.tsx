@@ -1,3 +1,5 @@
+
+
 import React, { useEffect, useState } from "react";
 import PrintLayout from "../../components/PrintLayout";
 import { getLedgerCollection, saveLedgerCollection, LedgerRow } from "../../lib/ledgerApi";
@@ -112,7 +114,7 @@ const DailyCollectionSheet: React.FC<DailyCollectionSheetProps> = ({ date }) => 
                 if (!el) return;
                 const w = window.open("", "", "height=600,width=800");
                 if (!w) return;
-                const currentDate = new Date().toISOString().split("T")[0];
+                const currentDate = new Date().toLocaleDateString('en-GB').replace(/\//g, '-');
                 w.document.title = `Daily Collection Sheet - ${currentDate}`;
                 w.document.write(`<html><head><title>Fishow - Daily Collection Sheet</title>`);
                 w.document.write(
@@ -151,13 +153,13 @@ const DailyCollectionSheet: React.FC<DailyCollectionSheetProps> = ({ date }) => 
           <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-600">
             <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Balance (Carried Forward)</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Today&apos;s Amount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Paid</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Discount</th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Closing Balance</th>
+                <th className="px-2 sm:px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Customer</th>
+                <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Balance (Carried Forward)</th>
+                <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Today&apos;s Amount</th>
+                <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Total</th>
+                <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Paid</th>
+                <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Discount</th>
+                <th className="px-2 sm:px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">Closing Balance</th>
               </tr>
             </thead>
 
@@ -232,19 +234,19 @@ const DailyCollectionSheet: React.FC<DailyCollectionSheetProps> = ({ date }) => 
 
             <tfoot className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <td colSpan={4} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                <td colSpan={4} className="px-2 sm:px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
                   Grand Total (Paid - Discount):
                 </td>
-                <td className="px-6 py-3 text-sm font-bold text-green-600 dark:text-green-400">
+                <td className="px-2 sm:px-6 py-3 text-sm font-bold text-green-600 dark:text-green-400">
                   ₹{(totalPaid - totalDiscount).toFixed(2)}
                 </td>
                 <td colSpan={2} className="print:hidden"></td>
               </tr>
               <tr>
-                <td colSpan={6} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                <td colSpan={6} className="px-2 sm:px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
                   Grand Total Closing Balance:
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-left text-sm font-bold text-blue-600 dark:text-blue-400">
+                <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-left text-sm font-bold text-blue-600 dark:text-blue-400">
                   ₹{(totalOpening + totalToday - (totalPaid + totalDiscount)).toFixed(2)}
                 </td>
               </tr>

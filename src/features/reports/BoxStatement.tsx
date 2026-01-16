@@ -8,8 +8,9 @@ import { listEntities, Entity } from '../../lib/entities';
 
 const BoxStatement = () => {
     const navigate = useNavigate();
-    const [startDate, setStartDate] = useState('');
-    const [endDate, setEndDate] = useState('');
+    const today = new Date().toLocaleDateString('en-CA');
+    const [startDate, setStartDate] = useState(today);
+    const [endDate, setEndDate] = useState(today);
     const [selectedCustomerId, setSelectedCustomerId] = useState('');
     const [selectedCustomerName, setSelectedCustomerName] = useState('');
     const [customers, setCustomers] = useState<Entity[]>([]);
@@ -309,30 +310,30 @@ const BoxStatement = () => {
 
                                                     return (
                                                         <tr key={txn.id}>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                            <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                                                 {new Date(txn.trans_date).toLocaleDateString('en-GB', {
                                                                     day: '2-digit',
-                                                                    month: 'short',
+                                                                    month: '2-digit',
                                                                     year: '2-digit'
                                                                 })}
                                                             </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                            <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                                                 {txn.party?.name || '-'}
                                                             </td>
-                                                            <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                                                            <td className="px-2 sm:px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
                                                                 {txn.box_sold}
                                                             </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                            <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                                 {txn.box_sale || 0}
                                                             </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                            <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                                 {txn.box_receive || 0}
                                                             </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                                                            <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
                                                                 {txn.remark || ''}
                                                             </td>
 
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
+                                                            <td className="px-2 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-white">
                                                                 {runningBalance}
                                                             </td>
                                                         </tr>
@@ -348,9 +349,9 @@ const BoxStatement = () => {
                                         </tbody>
 
                                         {/* Footer with Total Balance */}
-                                        <tfoot className="bg-gray-50 dark:bg-gray-700">
+                                        <tfoot className="bg-gray-50 dark:bg-gray-700 border-t-2 border-gray-200 dark:border-gray-600">
                                             <tr>
-                                                <td colSpan={3} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white">
+                                                <td colSpan={3} className="px-6 py-3 text-right text-sm font-medium text-gray-900 dark:text-white border-r dark:border-gray-600">
                                                     Total:
                                                 </td>
                                                 <td className="px-6 py-3 text-sm font-bold text-gray-900 dark:text-white">
@@ -359,7 +360,10 @@ const BoxStatement = () => {
                                                 <td className="px-6 py-3 text-sm font-bold text-gray-900 dark:text-white">
                                                     {totals.totalBoxReceived}
                                                 </td>
-                                                <td className="px-6 py-3 text-sm font-bold text-blue-600 dark:text-blue-400">
+                                                <td className="px-6 py-3 text-sm font-medium text-gray-900 dark:text-white">
+                                                    -
+                                                </td>
+                                                <td className="px-6 py-3 text-right text-sm font-bold text-blue-600 dark:text-blue-400">
                                                     {totals.totalBalance}
                                                 </td>
                                             </tr>
