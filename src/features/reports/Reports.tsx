@@ -15,6 +15,8 @@ import BoxReceiveReport from './BoxReceiveReport';
 import DailySummaryBox from './DailySummaryBox';
 import TotalBoxBalance from './TotalBoxBalance';
 import DailyBoxReturnReport from './DailyBoxReturnReport';
+import SearchableInput from '../../components/SearchableInput';
+import { listEntities } from '../../lib/entities';
 
 
 const Reports: React.FC = () => {
@@ -38,6 +40,8 @@ const Reports: React.FC = () => {
       : ''
   );
   const [dailySummaryTotal, setDailySummaryTotal] = useState<number>(0);
+  const [customers, setCustomers] = useState<{ id: string; name: string }[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
 
   const reportComponents: { [key: string]: React.ComponentType<any> } = {
     'daily-collection': DailyCollectionSheet,
@@ -109,6 +113,14 @@ const Reports: React.FC = () => {
     fetchDailySummaryTotal();
   }, [currentReportType, singleDate]);
 
+  useEffect(() => {
+    if (currentReportType === 'daily-collection') {
+      listEntities('customers', { pageSize: 1000 })
+        .then(res => setCustomers(res.data.map((c: any) => ({ ...c, id: String(c.id) }))))
+        .catch(console.error);
+    }
+  }, [currentReportType]);
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-200">
       <AdminBoard />
@@ -145,6 +157,21 @@ const Reports: React.FC = () => {
                   onChange={(e) => setSingleDate(e.target.value)}
                   className="px-2 py-1 border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-sm"
                 />
+
+                {currentReportType === 'daily-collection' && (
+                  <div className="w-64">
+                    <SearchableInput
+                      value={selectedCustomerId}
+                      onChange={setSelectedCustomerId}
+                      searchData={customers}
+                      onSelect={(item) => setSelectedCustomerId(item.id)}
+                      placeholder="Search Customer"
+                      createRoute="#"
+                      entityType="Customer"
+                    />
+                  </div>
+                )}
+
                 {(currentReportType === 'daily-summary') && (
                   <div className="ml-auto text-sm font-medium text-gray-700 dark:text-gray-300">
                     Total Sale: <span className="text-gray-900 dark:text-white">₹{dailySummaryTotal.toFixed(2)}</span>
@@ -185,7 +212,7 @@ const Reports: React.FC = () => {
             ) : currentReportType === 'daily-summary' ? (
               <ReportComponent date={singleDate} />
             ) : currentReportType === 'daily-collection' ? (
-              <ReportComponent date={singleDate} />
+              <ReportComponent date={singleDate} filterRowId={selectedCustomerId || null} />
             ) : currentReportType === 'sales-register' ? (
               <ReportComponent date={singleDate} />
             ) : currentReportType === 'daily-box-return' ? (

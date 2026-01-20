@@ -213,11 +213,12 @@ const MultipleBoxReceiveUpdate: React.FC = () => {
                               if (itemIndex !== -1) {
                                 const available = prevItems[itemIndex].currentDbBalance;
                                 const entered = Number(val) || 0;
-                                const safeValue = Math.min(entered, available); // ✅ prevent negatives
+                                const safeValue = Math.min(entered); // ✅ prevent negatives
+
                                 const updatedItem = {
                                   ...prevItems[itemIndex],
-                                  rcdBox: safeValue,
-                                  balance: Math.max(0, available - safeValue),
+                                  rcdBox: entered,
+                                  balance: available - entered,
                                   isModified: true,
                                 };
                                 return [
