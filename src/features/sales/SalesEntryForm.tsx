@@ -1574,8 +1574,6 @@
 
 
 
-
-
 import { Plus, Save, Trash2, Eye } from 'lucide-react';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -1630,6 +1628,44 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
   customers,
   products,
 }) => {
+  const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+
+  useEffect(() => {
+    if (isOpen) {
+      setFocusedIndex(-1);
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.min(prev + 1, formData.items.length - 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedIndex(prev => Math.max(prev - 1, 0));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+      } else if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, formData.items.length, onClose]);
+
+  useEffect(() => {
+    if (focusedIndex >= 0) {
+      const row = document.getElementById(`preview-row-${focusedIndex}`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+      }
+    }
+  }, [focusedIndex]);
+
   if (!isOpen) return null;
 
   const getEntityName = (id: string, entityList: { id: string; name: string }[]) => {
@@ -1720,8 +1756,16 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {formData.items.map((item) => (
-                  <tr key={item.id} className="bg-white dark:bg-gray-800">
+                {formData.items.map((item, index) => (
+                  <tr
+                    key={item.id}
+                    id={`preview-row-${index}`}
+                    onClick={() => setFocusedIndex(index)}
+                    className={`cursor-pointer transition-colors ${focusedIndex === index
+                      ? 'bg-blue-100 dark:bg-blue-900'
+                      : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700'
+                      }`}
+                  >
                     <td className="border border-gray-300 dark:border-gray-600 px-3 py-2 text-sm text-gray-900 dark:text-white">
                       {getEntityName(item.customer, customers)}
                     </td>
@@ -1881,6 +1925,7 @@ const SalesEntryForm: React.FC = () => {
       remark: '',
     },
   ]);
+  const [focusedRowId, setFocusedRowId] = useState<string | null>(null);
 
   // localStorage key for header values
   const HEADER_STORAGE_KEY = 'salesFormHeaderValues';
@@ -2358,50 +2403,53 @@ const SalesEntryForm: React.FC = () => {
   const headerFieldOrder = ['date', 'party', 'totalBox', 'salesman', 'entryNumber'];
 
   const handleHeaderKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const currentField = (e.target as HTMLElement).closest('[data-field]')?.getAttribute('data-field');
+    const currentIndex = headerFieldOrder.indexOf(currentField || '');
+
     if (e.key === 'Enter') {
       e.preventDefault();
-      // Find the wrapper div with data-field
-      const wrapper = (e.target as HTMLElement).closest('[data-field]');
-      const currentField = wrapper?.getAttribute('data-field');
       if (!currentField) return;
-
-      const currentIndex = headerFieldOrder.indexOf(currentField);
-      if (currentIndex === -1) return;
 
       const nextField = headerFieldOrder[currentIndex + 1];
 
-      if (currentField === 'salesman' || !nextField) {
-        // Skip entryNumber and move to first item row's customer field
+      if (currentField === 'salesman' || currentField === 'entryNumber' || !nextField) {
+        // Move to first item row's customer field
         if (items.length > 0) {
-          // Try searching in wrapper divs first (for SearchableInput)
           const firstWrapperInput = document.querySelector<HTMLInputElement>(
             `[data-item-id="${items[0].id}"][data-field="customer"] input`
           );
-          if (firstWrapperInput) {
-            firstWrapperInput.focus();
-          } else {
-            // Fallback to regular input
-            const firstInput = document.querySelector<HTMLInputElement>(
-              `input[data-item-id="${items[0].id}"][data-field="customer"]`
-            );
-            firstInput?.focus();
-          }
+          firstWrapperInput?.focus();
         }
         return;
       }
 
-      // Try searching in wrapper divs first (for SearchableInput fields like party)
-      let nextInput = document.querySelector<HTMLInputElement>(
-        `[data-field="${nextField}"] input`
-      );
-      if (nextInput) {
-        nextInput.focus();
-      } else {
-        // Fallback to regular input (for fields like date, totalBox)
-        nextInput = document.querySelector<HTMLInputElement>(
-          `input[data-field="${nextField}"]`
-        );
+      // Try searching in wrapper divs first
+      let nextInput = document.querySelector<HTMLInputElement>(`[data-field="${nextField}"] input`);
+      if (!nextInput) {
+        nextInput = document.querySelector<HTMLInputElement>(`input[data-field="${nextField}"]`);
+      }
+      nextInput?.focus();
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      const nextField = headerFieldOrder[currentIndex + 1];
+      if (nextField) {
+        let nextInput = document.querySelector<HTMLInputElement>(`[data-field="${nextField}"] input`);
+        if (!nextInput) nextInput = document.querySelector<HTMLInputElement>(`input[data-field="${nextField}"]`);
         nextInput?.focus();
+      } else if (items.length > 0) {
+        // Move to first row of table
+        const firstWrapperInput = document.querySelector<HTMLInputElement>(
+          `[data-item-id="${items[0].id}"][data-field="customer"] input`
+        );
+        firstWrapperInput?.focus();
+      }
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      const prevField = headerFieldOrder[currentIndex - 1];
+      if (prevField) {
+        let prevInput = document.querySelector<HTMLInputElement>(`[data-field="${prevField}"] input`);
+        if (!prevInput) prevInput = document.querySelector<HTMLInputElement>(`input[data-field="${prevField}"]`);
+        prevInput?.focus();
       }
     }
   };
@@ -2433,17 +2481,61 @@ const SalesEntryForm: React.FC = () => {
     e: React.KeyboardEvent<HTMLInputElement>,
     itemId: string
   ) => {
-    if (e.key === 'Enter') {
-      e.preventDefault();
+    // Find the data-field from the input or its wrapper
+    let currentField = (e.target as HTMLInputElement).dataset.field;
+    if (!currentField) {
+      const wrapper = (e.target as HTMLElement).closest('[data-field]');
+      currentField = wrapper?.getAttribute('data-field') || '';
+    }
 
-      // Find the data-field from the input or its wrapper
-      let currentField = (e.target as HTMLInputElement).dataset.field;
-      if (!currentField) {
-        const wrapper = (e.target as HTMLElement).closest('[data-field]');
-        currentField = wrapper?.getAttribute('data-field') || '';
+    if (!currentField) return;
+
+    // Handle Vertical Navigation (ArrowUp / ArrowDown)
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+      const currentItemIndex = items.findIndex((item) => item.id === itemId);
+      if (currentItemIndex === -1) return;
+
+      if (e.key === 'ArrowUp' && currentItemIndex === 0) {
+        e.preventDefault();
+        // Move back to salesman header field
+        const salesmanInput = document.querySelector<HTMLInputElement>(`[data-field="salesman"] input`);
+        salesmanInput?.focus();
+        return;
       }
 
-      if (!currentField) return;
+      let targetItemId: string | null = null;
+      if (e.key === 'ArrowDown') {
+        if (currentItemIndex < items.length - 1) {
+          e.preventDefault();
+          targetItemId = items[currentItemIndex + 1].id;
+        }
+      } else if (e.key === 'ArrowUp') {
+        if (currentItemIndex > 0) {
+          e.preventDefault();
+          targetItemId = items[currentItemIndex - 1].id;
+        }
+      }
+
+      if (targetItemId) {
+        // Find input with same data-field in target row
+        const nextWrapperInput = document.querySelector<HTMLInputElement>(
+          `[data-item-id="${targetItemId}"][data-field="${currentField}"] input`
+        );
+        if (nextWrapperInput) {
+          nextWrapperInput.focus();
+        } else {
+          const nextInput = document.querySelector<HTMLInputElement>(
+            `input[data-item-id="${targetItemId}"][data-field="${currentField}"]`
+          );
+          nextInput?.focus();
+        }
+      }
+      return;
+    }
+
+    // Handle Enter Key Navigation
+    if (e.key === 'Enter') {
+      e.preventDefault();
 
       const currentIndex = fieldOrder.indexOf(currentField as keyof SalesItem);
       if (currentIndex === -1) return;
@@ -2915,7 +3007,7 @@ const SalesEntryForm: React.FC = () => {
             </div>
 
             {/* Scrollable Table Area */}
-            <div className="flex-1 overflow-y-auto mt-2">
+            <div className="flex-1 overflow-y-auto mt-2 outline-none focus:ring-1 focus:ring-blue-500/30 rounded-lg" tabIndex={0}>
               {/* Items Table */}
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse border border-gray-300 dark:border-gray-600 min-w-[1000px]">
@@ -2949,7 +3041,14 @@ const SalesEntryForm: React.FC = () => {
                   </thead>
                   <tbody>
                     {items.map((item) => (
-                      <tr key={item.id} className="bg-white dark:bg-gray-800">
+                      <tr
+                        key={item.id}
+                        onFocus={() => setFocusedRowId(item.id)}
+                        className={`transition-colors ${focusedRowId === item.id
+                          ? 'bg-blue-100 dark:bg-blue-900/20'
+                          : 'bg-white dark:bg-gray-800'
+                          }`}
+                      >
                         <td className="border border-gray-300 dark:border-gray-600 p-2 min-w-[150px] sm:min-w-[220px]">
                           <SearchableInput
                             value={item.customer}
@@ -3136,5 +3235,3 @@ const SalesEntryForm: React.FC = () => {
 };
 
 export default SalesEntryForm;
-
-
