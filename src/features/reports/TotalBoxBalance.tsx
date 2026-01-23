@@ -242,8 +242,6 @@
 
 
 
-
-
 import React, { useEffect, useState } from "react";
 import { getTotalBoxBalance, getTotalBoxBalanceCustomers, PartyBoxBalance, TotalBoxBalanceCustomerRow } from "../../lib/box";
 
@@ -259,6 +257,7 @@ const TotalBoxBalance: React.FC = () => {
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [grandTotal, setGrandTotal] = useState(0);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+  const [customerFocusedIndex, setCustomerFocusedIndex] = useState<number>(-1);
 
   const [expandedPartyId, setExpandedPartyId] = useState<number | null>(null);
   const [customers, setCustomers] = useState<TotalBoxBalanceCustomerRow[]>([]);
@@ -305,7 +304,6 @@ const TotalBoxBalance: React.FC = () => {
     w.close();
   };
 
-
   useEffect(() => {
     fetchBoxBalanceData();
   }, []);
@@ -320,6 +318,27 @@ const TotalBoxBalance: React.FC = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (loading || data.length === 0) return;
+
+      if (expandedPartyId !== null && customers.length > 0) {
+        // Navigation within customer table
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setCustomerFocusedIndex(prev => Math.min(prev + 1, customers.length - 1));
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setCustomerFocusedIndex(prev => Math.max(prev - 1, 0));
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          setExpandedPartyId(null);
+          setCustomerFocusedIndex(-1);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          setExpandedPartyId(null);
+          setCustomerFocusedIndex(-1);
+        }
+        return;
+      }
+
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setFocusedIndex(prev => Math.min(prev + 1, data.length - 1));
@@ -327,24 +346,35 @@ const TotalBoxBalance: React.FC = () => {
         e.preventDefault();
         setFocusedIndex(prev => Math.max(prev - 1, 0));
       } else if (e.key === 'Enter') {
+        e.preventDefault();
         if (focusedIndex >= 0 && data[focusedIndex]) {
-          fetchCustomers(data[focusedIndex].partyId);
+          if (expandedPartyId === data[focusedIndex].partyId) {
+            setExpandedPartyId(null);
+            setCustomerFocusedIndex(-1);
+          } else {
+            fetchCustomers(data[focusedIndex].partyId);
+            setCustomerFocusedIndex(-1);
+          }
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [data, loading, focusedIndex, expandedPartyId]);
+  }, [data, loading, focusedIndex, expandedPartyId, customers, customerLoading]);
 
   useEffect(() => {
-    if (focusedIndex >= 0) {
+    if (customerFocusedIndex >= 0 && expandedPartyId !== null) {
+      const row = document.getElementById(`customer-row-${customerFocusedIndex}`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+      }
+    } else if (focusedIndex >= 0) {
       const row = document.getElementById(`balance-row-${focusedIndex}`);
       if (row) {
         row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
       }
     }
-  }, [focusedIndex]);
-
+  }, [focusedIndex, customerFocusedIndex, expandedPartyId]);
 
   const fetchBoxBalanceData = async () => {
     setLoading(true);
@@ -477,7 +507,15 @@ const TotalBoxBalance: React.FC = () => {
                             </thead>
                             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                               {customers.map((c, idx) => (
-                                <tr key={idx}>
+                                <tr
+                                  key={idx}
+                                  id={`customer-row-${idx}`}
+                                  onClick={() => setCustomerFocusedIndex(idx)}
+                                  className={`transition-colors ${customerFocusedIndex === idx
+                                    ? 'bg-blue-50 dark:bg-blue-900/40'
+                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    }`}
+                                >
                                   <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{c.customer}</td>
                                   <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{c.total_balance}</td>
                                 </tr>

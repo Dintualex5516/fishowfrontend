@@ -220,6 +220,21 @@
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 import React, { useEffect, useState } from 'react';
 import {
     getDailyReturn,
@@ -239,6 +254,7 @@ const DailyBoxReturnReport: React.FC<Props> = ({ date }) => {
     const [loading, setLoading] = useState(false);
     const [customerLoading, setCustomerLoading] = useState(false);
     const [focusedIndex, setFocusedIndex] = useState<number>(-1);
+    const [customerFocusedIndex, setCustomerFocusedIndex] = useState<number>(-1);
 
     useEffect(() => {
         if (!date) return;
@@ -264,6 +280,26 @@ const DailyBoxReturnReport: React.FC<Props> = ({ date }) => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (loading || data.length === 0) return;
 
+            if (expandedPartyId !== null && customers.length > 0) {
+                // Navigation within customer table
+                if (e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    setCustomerFocusedIndex(prev => Math.min(prev + 1, customers.length - 1));
+                } else if (e.key === 'ArrowUp') {
+                    e.preventDefault();
+                    setCustomerFocusedIndex(prev => Math.max(prev - 1, 0));
+                } else if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setExpandedPartyId(null);
+                    setCustomerFocusedIndex(-1);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    setExpandedPartyId(null);
+                    setCustomerFocusedIndex(-1);
+                }
+                return;
+            }
+
             if (e.key === 'ArrowDown') {
                 e.preventDefault();
                 setFocusedIndex(prev => Math.min(prev + 1, data.length - 1));
@@ -271,28 +307,36 @@ const DailyBoxReturnReport: React.FC<Props> = ({ date }) => {
                 e.preventDefault();
                 setFocusedIndex(prev => Math.max(prev - 1, 0));
             } else if (e.key === 'Enter') {
+                e.preventDefault();
                 if (focusedIndex >= 0 && data[focusedIndex]) {
                     if (expandedPartyId === data[focusedIndex].party_id) {
                         setExpandedPartyId(null);
+                        setCustomerFocusedIndex(-1);
                     } else {
                         fetchCustomers(data[focusedIndex].party_id);
+                        setCustomerFocusedIndex(-1);
                     }
                 }
             }
         };
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [data, loading, focusedIndex, expandedPartyId]);
+    }, [data, loading, focusedIndex, expandedPartyId, customers, customerLoading]);
 
     // Scroll into view
     useEffect(() => {
-        if (focusedIndex >= 0) {
+        if (customerFocusedIndex >= 0 && expandedPartyId !== null) {
+            const row = document.getElementById(`customer-row-${customerFocusedIndex}`);
+            if (row) {
+                row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+            }
+        } else if (focusedIndex >= 0) {
             const row = document.getElementById(`return-row-${focusedIndex}`);
             if (row) {
                 row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
             }
         }
-    }, [focusedIndex]);
+    }, [focusedIndex, customerFocusedIndex, expandedPartyId]);
 
     const handlePrint = () => {
         const printContents = document.getElementById("printable-area")?.innerHTML;
@@ -326,7 +370,6 @@ const DailyBoxReturnReport: React.FC<Props> = ({ date }) => {
         w.close();
     };
 
-
     const handlePrintCustomerDetails = (partyName: string) => {
         const w = window.open("", "", "height=600,width=800");
         if (!w) return;
@@ -351,7 +394,6 @@ const DailyBoxReturnReport: React.FC<Props> = ({ date }) => {
         w.print();
         w.close();
     };
-
 
     const fetchCustomers = async (partyId: number) => {
         setCustomerLoading(true);
@@ -389,7 +431,6 @@ const DailyBoxReturnReport: React.FC<Props> = ({ date }) => {
                     Print
                 </button>
             </div>
-
 
             <div className="overflow-x-auto">
                 <div id="printable-area" className="overflow-x-auto">
@@ -462,8 +503,16 @@ const DailyBoxReturnReport: React.FC<Props> = ({ date }) => {
                                                                 </tr>
                                                             </thead>
                                                             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
-                                                                {customers.map((c) => (
-                                                                    <tr key={c.customer_id}>
+                                                                {customers.map((c, i) => (
+                                                                    <tr
+                                                                        key={c.customer_id || i}
+                                                                        id={`customer-row-${i}`}
+                                                                        onClick={() => setCustomerFocusedIndex(i)}
+                                                                        className={`transition-colors ${customerFocusedIndex === i
+                                                                            ? 'bg-blue-50 dark:bg-blue-900/40'
+                                                                            : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                                            }`}
+                                                                    >
                                                                         <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{c.customer}</td>
                                                                         <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{c.boxes_returned}</td>
                                                                     </tr>

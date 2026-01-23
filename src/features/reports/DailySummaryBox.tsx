@@ -222,7 +222,6 @@
 
 
 
-
 import React, { useEffect, useState } from "react";
 import { getDailyBoxSummary, BoxSummaryRow, getDailyBoxSummaryCustomers } from "../../lib/box";
 
@@ -238,7 +237,7 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
   const [customers, setCustomers] = useState<any[]>([]);
   const [customerLoading, setCustomerLoading] = useState(false);
   const [focusedIndex, setFocusedIndex] = useState<number>(-1);
-
+  const [customerFocusedIndex, setCustomerFocusedIndex] = useState<number>(-1);
 
   useEffect(() => {
     if (date) fetchData();
@@ -249,6 +248,27 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (loading || data.length === 0) return;
 
+      if (expandedPartyId !== null && customers.length > 0) {
+        // Navigation within customer table
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setCustomerFocusedIndex(prev => Math.min(prev + 1, customers.length - 1));
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setCustomerFocusedIndex(prev => Math.max(prev - 1, 0));
+        } else if (e.key === 'Enter') {
+          e.preventDefault();
+          setExpandedPartyId(null);
+          setCustomerFocusedIndex(-1);
+        } else if (e.key === 'Escape') {
+          e.preventDefault();
+          setExpandedPartyId(null);
+          setCustomerFocusedIndex(-1);
+        }
+        return;
+      }
+
+      // Navigation in main table
       if (e.key === 'ArrowDown') {
         e.preventDefault();
         setFocusedIndex(prev => Math.min(prev + 1, data.length - 1));
@@ -256,28 +276,36 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
         e.preventDefault();
         setFocusedIndex(prev => Math.max(prev - 1, 0));
       } else if (e.key === 'Enter') {
+        e.preventDefault();
         if (focusedIndex >= 0 && data[focusedIndex]) {
           if (expandedPartyId === data[focusedIndex].partyId) {
             setExpandedPartyId(null);
+            setCustomerFocusedIndex(-1);
           } else {
             fetchCustomers(data[focusedIndex].partyId);
+            setCustomerFocusedIndex(-1);
           }
         }
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [data, loading, focusedIndex, expandedPartyId]);
+  }, [data, loading, focusedIndex, expandedPartyId, customers, customerLoading]);
 
   // Scroll into view
   useEffect(() => {
-    if (focusedIndex >= 0) {
+    if (customerFocusedIndex >= 0 && expandedPartyId !== null) {
+      const row = document.getElementById(`customer-row-${customerFocusedIndex}`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
+      }
+    } else if (focusedIndex >= 0) {
       const row = document.getElementById(`box-summary-row-${focusedIndex}`);
       if (row) {
         row.scrollIntoView({ behavior: 'auto', block: 'nearest' });
       }
     }
-  }, [focusedIndex]);
+  }, [focusedIndex, customerFocusedIndex, expandedPartyId]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -332,7 +360,6 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
     w.print();
     w.close();
   };
-
 
   const handlePrint = () => {
     const printContents = document.getElementById("printable-area")?.innerHTML;
@@ -460,7 +487,15 @@ const DailySummaryBox: React.FC<DailySummaryBoxProps> = ({ date }) => {
                             </thead>
                             <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-600">
                               {customers.map((c, i) => (
-                                <tr key={i}>
+                                <tr
+                                  key={i}
+                                  id={`customer-row-${i}`}
+                                  onClick={() => setCustomerFocusedIndex(i)}
+                                  className={`transition-colors ${customerFocusedIndex === i
+                                    ? 'bg-blue-50 dark:bg-blue-900/40'
+                                    : 'hover:bg-gray-50 dark:hover:bg-gray-700'
+                                    }`}
+                                >
                                   <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900 dark:text-white">{c.customer}</td>
                                   <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">{c.boxes}</td>
                                 </tr>
