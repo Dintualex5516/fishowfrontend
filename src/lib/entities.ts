@@ -1,8 +1,13 @@
-import {api} from "./api"
-
+import { api } from "./api";
 
 export type EntityName = "customers" | "parties" | "salesmen" | "products";
-export type Entity = { id: number | string; name: string; created_at?: string };
+
+export type Entity = { 
+  id: number | string; 
+  name: string; 
+  phone?: string;
+  created_at?: string 
+};
 
 export const listEntities = async (
   entity: EntityName,
@@ -17,18 +22,12 @@ export const listEntities = async (
   return resp.data;
 };
 
-export const getEntity = async (entity: EntityName, id: number | string) => {
-  const resp = await api.get(`/api/masters/${entity}`, { params: { page: 1, pageSize: 1, id } });
-  // Note: your router currently doesn't implement GET /:entity/:id — adapt if needed.
-  return resp.data;
-};
-
-export const createEntity = async (entity: EntityName, body: { name: string }) => {
+export const createEntity = async (entity: EntityName, body: { name: string; phone?: string }) => {
   const resp = await api.post(`/api/masters/${entity}`, body);
   return resp.data;
 };
 
-export const updateEntity = async (entity: EntityName, id: number | string, body: { name: string }) => {
+export const updateEntity = async (entity: EntityName, id: number | string, body: { name: string; phone?: string }) => {
   const resp = await api.put(`/api/masters/${entity}/${id}`, body);
   return resp.data;
 };
