@@ -625,6 +625,13 @@ const AdminBoard: React.FC = () => {
                     setIsMobileMenuOpen(false);
                   }}
                 />
+                <a
+                  href="/fishowapp.apk"
+                  download
+                  className="block px-3 py-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg font-medium"
+                >
+                  Download App
+                </a>
 
                 {loadItems.length > 0 && (
                   <DropdownMenu
