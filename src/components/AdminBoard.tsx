@@ -389,19 +389,6 @@ const AdminBoard: React.FC = () => {
   const [transactionDropdown, setTransactionDropdown] = useState(false);
   const navigate = useNavigate();
 
-  const [isMobileDevice, setIsMobileDevice] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor;
-      const isMobile = /android|iphone|ipad|ipod/i.test(userAgent);
-      setIsMobileDevice(isMobile);
-    };
-
-    checkMobile();
-  }, []);
-
-
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as HTMLElement;
@@ -526,16 +513,13 @@ const AdminBoard: React.FC = () => {
           <div className="hidden md:flex items-center space-x-8">
             <NavButton label="Home" onClick={() => navigate('/dashboard')} />
 
-            {isMobileDevice && (
-              <a
-                href="/fishowapp.apk"
-                download
-                className="px-3 py-2 text-green-600 hover:bg-green-50 rounded-lg font-medium"
-              >
-                Download App
-              </a>
-            )}
-
+            <a
+              href="/fishowapp.apk"
+              download
+              className="px-3 py-2 text-gray-700 dark:text-gray-200 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-lg transition-all font-medium"
+            >
+              Download App
+            </a>
 
 
             {loadItems.length > 0 && (
